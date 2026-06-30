@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../services/api_client.dart';
+import '../theme/app_colors.dart';
+import '../widgets/app_empty_state.dart';
+import '../widgets/app_error_state.dart';
+import '../widgets/app_loading.dart';
+import '../widgets/invoice_list_tile.dart';
+import '../theme/app_icons.dart';
 
 class InvoicesScreen extends StatefulWidget {
   const InvoicesScreen({super.key});
@@ -44,8 +49,6 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dateFmt = DateFormat('dd/MM HH:mm');
-
     return Column(
       children: [
         Padding(
@@ -65,33 +68,25 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         ),
         Expanded(
           child: _loading
-              ? const Center(child: CircularProgressIndicator())
+              ? const AppLoading()
               : _error != null
-                  ? Center(child: Text(_error!))
+                  ? AppErrorState(message: _error!, onRetry: _load)
                   : _invoices.isEmpty
-                      ? const Center(child: Text('Aucune facture'))
+                      ? const AppEmptyState(
+                          icon: AppIcons.receipt,
+                          title: 'Aucune facture',
+                          subtitle: 'Aucun résultat pour ce filtre.',
+                        )
                       : RefreshIndicator(
                           onRefresh: _load,
+                          color: AppColors.primary,
                           child: ListView.separated(
                             padding: const EdgeInsets.all(16),
                             itemCount: _invoices.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 8),
+                            separatorBuilder: (_, _) => const SizedBox(height: 10),
                             itemBuilder: (context, index) {
-                              final inv = _invoices[index];
-                              return Card(
-                                child: ListTile(
-                                  title: Text(inv.number),
-                                  subtitle: Text(
-                                    '${invoiceStatusLabels[inv.status] ?? inv.status}'
-                                    '${inv.customerName != null ? ' · ${inv.customerName}' : ''}\n'
-                                    '${dateFmt.format(inv.createdAt.toLocal())}',
-                                  ),
-                                  isThreeLine: true,
-                                  trailing: Text(
-                                    '${formatCdf(inv.totalTtc)} FC',
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                ),
+                              return InvoiceListTile(
+                                invoice: _invoices[index],
                               );
                             },
                           ),

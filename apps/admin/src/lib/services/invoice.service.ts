@@ -1,5 +1,6 @@
 import { InvoiceStatus, PointOfSaleType, prisma, Role, StockMovementType } from "@ges/database";
 import { ApiError } from "@/lib/api-utils";
+import { resolveAssetUrl } from "@/lib/assets";
 
 export type InvoiceLineInput = {
   productId: string;
@@ -209,7 +210,7 @@ export async function getInvoice(id: string) {
       pointOfSale: { select: { id: true, code: true, name: true, type: true } },
       createdBy: { select: { id: true, name: true, email: true } },
       lines: {
-        include: { product: { select: { id: true, sku: true } } },
+        include: { product: { select: { id: true, sku: true, imageUrl: true } } },
         orderBy: { id: "asc" },
       },
       payments: { orderBy: { createdAt: "asc" } },
@@ -232,6 +233,7 @@ export async function getInvoice(id: string) {
       productId: l.productId,
       productSku: l.product.sku,
       productName: l.productName,
+      productImageUrl: resolveAssetUrl(l.product.imageUrl),
       quantity: l.quantity,
       unitPrice: Number(l.unitPrice),
       taxRate: Number(l.taxRate),

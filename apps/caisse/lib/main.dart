@@ -5,7 +5,8 @@ import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/pos_select_screen.dart';
 import 'services/api_client.dart';
-import 'theme/app_colors.dart';
+import 'theme/app_theme.dart';
+import 'widgets/app_loading.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,23 +42,13 @@ class _GesBoutiqueAppState extends State<GesBoutiqueApp> {
       child: MaterialApp(
         title: 'La Colombe',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: AppColors.primary,
-            brightness: Brightness.light,
-          ).copyWith(
-            primary: AppColors.primary,
-            primaryContainer: AppColors.primarySoft,
-            onPrimary: Colors.white,
-          ),
-          useMaterial3: true,
-        ),
+        theme: AppTheme.light,
         home: ListenableBuilder(
           listenable: _api,
           builder: (context, _) {
             if (!_api.isReady) {
               return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
+                body: AppLoading(message: 'Chargement...'),
               );
             }
             if (!_api.isAuthenticated) {

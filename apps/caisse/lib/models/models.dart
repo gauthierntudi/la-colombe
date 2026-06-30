@@ -28,6 +28,7 @@ class AppUser {
     required this.name,
     required this.role,
     required this.pointOfSales,
+    this.avatarUrl,
   });
 
   final String id;
@@ -35,12 +36,14 @@ class AppUser {
   final String name;
   final String role;
   final List<PointOfSale> pointOfSales;
+  final String? avatarUrl;
 
   factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(
         id: json['id'] as String,
         email: json['email'] as String,
         name: json['name'] as String,
         role: json['role'] as String,
+        avatarUrl: json['avatarUrl'] as String?,
         pointOfSales: (json['pointOfSales'] as List<dynamic>? ?? [])
             .map((e) => PointOfSale.fromJson(e as Map<String, dynamic>))
             .toList(),
@@ -67,6 +70,7 @@ class Product {
     required this.taxRate,
     this.barcode,
     this.availableStock,
+    this.imageUrl,
   });
 
   final String id;
@@ -76,6 +80,7 @@ class Product {
   final double taxRate;
   final String? barcode;
   int? availableStock;
+  final String? imageUrl;
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
         id: json['id'] as String,
@@ -84,6 +89,7 @@ class Product {
         unitPrice: (json['unitPrice'] as num).toInt(),
         taxRate: (json['taxRate'] as num).toDouble(),
         barcode: json['barcode'] as String?,
+        imageUrl: json['imageUrl'] as String?,
       );
 }
 
@@ -189,6 +195,7 @@ class InvoiceLine {
     required this.quantity,
     required this.unitPrice,
     required this.lineTotalTtc,
+    this.imageUrl,
   });
 
   final String productName;
@@ -196,6 +203,7 @@ class InvoiceLine {
   final int quantity;
   final int unitPrice;
   final int lineTotalTtc;
+  final String? imageUrl;
 
   factory InvoiceLine.fromJson(Map<String, dynamic> json) => InvoiceLine(
         productName: json['productName'] as String,
@@ -203,6 +211,7 @@ class InvoiceLine {
         quantity: (json['quantity'] as num).toInt(),
         unitPrice: (json['unitPrice'] as num).toInt(),
         lineTotalTtc: (json['lineTotalTtc'] as num).toInt(),
+        imageUrl: json['productImageUrl'] as String?,
       );
 }
 
@@ -274,7 +283,7 @@ class YocoSdkConfig {
       );
 }
 
-enum PayMode { cash, mobileMoney, mixed }
+enum PayMode { cash, mobileMoney }
 
 const mmProviders = [
   (value: 'ORANGE', label: 'Orange Money'),

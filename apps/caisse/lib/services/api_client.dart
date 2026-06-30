@@ -25,9 +25,11 @@ class ApiClient extends ChangeNotifier {
   final FlutterSecureStorage _storage;
 
   static const _tokenKey = 'access_token';
+  static const _refreshTokenKey = 'refresh_token';
   static const _posKey = 'active_pos_id';
 
   String? _accessToken;
+  String? _refreshToken;
   AppUser? _user;
   PointOfSale? _activePos;
   CashSession? _session;
@@ -42,31 +44,101 @@ class ApiClient extends ChangeNotifier {
 
   Future<void> init() async {
     _accessToken = await _storage.read(key: _tokenKey);
+    _refreshToken = await _storage.read(key: _refreshTokenKey);
     final posId = await _storage.read(key: _posKey);
     if (_accessToken != null) {
-      try {
-        final me = await _getMe();
-        _user = me;
-        if (posId != null) {
-          try {
-            _activePos = me.storePoints.firstWhere((p) => p.id == posId);
-            await refreshOpenSession();
-          } catch (_) {
-            _activePos = null;
-            _session = null;
-          }
-        }
-      } catch (_) {
-        await logout();
-      }
+      final restored = await _restoreSession(posId);
+      if (!restored) await logout();
     }
     _ready = true;
     notifyListeners();
   }
 
+  Future<bool> _restoreSession(String? posId) async {
+    try {
+      await _loadUserAndPos(posId);
+      return true;
+    } catch (_) {
+      final refreshed = await _refreshAccessToken();
+      if (!refreshed) return false;
+      try {
+        await _loadUserAndPos(posId);
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+  }
+
+  Future<void> _loadUserAndPos(String? posId) async {
+    final me = await _getMe();
+    _user = me;
+    if (posId != null) {
+      try {
+        _activePos = me.storePoints.firstWhere((p) => p.id == posId);
+        await refreshOpenSession();
+      } catch (_) {
+        _activePos = null;
+        _session = null;
+      }
+    }
+  }
+
+  /// Rafraîchit le profil et la session caisse (ex. retour au premier plan).
+  Future<void> ensureSession() async {
+    if (_accessToken == null) return;
+    try {
+      await _loadUserAndPos(await _storage.read(key: _posKey));
+    } on ApiException catch (e) {
+      if (e.statusCode == 401) {
+        final refreshed = await _refreshAccessToken();
+        if (refreshed) {
+          await _loadUserAndPos(await _storage.read(key: _posKey));
+        } else {
+          await logout();
+        }
+      }
+    } catch (_) {
+      // réseau — conserver la session locale
+    }
+    notifyListeners();
+  }
+
+  Future<bool> _refreshAccessToken() async {
+    final refresh = _refreshToken ?? await _storage.read(key: _refreshTokenKey);
+    if (refresh == null || refresh.isEmpty) return false;
+
+    try {
+      final uri = Uri.parse('$apiBaseUrl/auth/refresh');
+      final response = await _http.post(
+        uri,
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': refresh}),
+      );
+
+      if (response.statusCode >= 400) return false;
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      _accessToken = json['accessToken'] as String;
+      _refreshToken = json['refreshToken'] as String;
+      _user = AppUser.fromJson(json['user'] as Map<String, dynamic>);
+      await _storage.write(key: _tokenKey, value: _accessToken);
+      await _storage.write(key: _refreshTokenKey, value: _refreshToken);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _http.close();
+    super.dispose();
+  }
+
   Future<AppUser> _getMe() async {
-    final json = await _request('GET', '/auth/me');
-    return AppUser.fromJson(json as Map<String, dynamic>);
+    final json = await _request('GET', '/auth/me') as Map<String, dynamic>;
+    return AppUser.fromJson(json['user'] as Map<String, dynamic>);
   }
 
   Future<void> login(String email, String password) async {
@@ -83,8 +155,12 @@ class ApiClient extends ChangeNotifier {
     }
 
     _accessToken = json['accessToken'] as String;
+    _refreshToken = json['refreshToken'] as String?;
     _user = user;
     await _storage.write(key: _tokenKey, value: _accessToken);
+    if (_refreshToken != null) {
+      await _storage.write(key: _refreshTokenKey, value: _refreshToken);
+    }
 
     final stores = _user!.storePoints;
     if (stores.length == 1) {
@@ -99,10 +175,12 @@ class ApiClient extends ChangeNotifier {
 
   Future<void> logout() async {
     _accessToken = null;
+    _refreshToken = null;
     _user = null;
     _activePos = null;
     _session = null;
     await _storage.delete(key: _tokenKey);
+    await _storage.delete(key: _refreshTokenKey);
     await _storage.delete(key: _posKey);
     notifyListeners();
   }
@@ -406,6 +484,7 @@ class ApiClient extends ChangeNotifier {
     String path, {
     Map<String, dynamic>? body,
     bool auth = true,
+    bool allowRefresh = true,
   }) async {
     final uri = Uri.parse('$apiBaseUrl$path');
     final headers = <String, String>{
@@ -425,6 +504,22 @@ class ApiClient extends ChangeNotifier {
         );
       default:
         throw ApiException('Méthode HTTP non supportée: $method');
+    }
+
+    if (response.statusCode == 401 &&
+        auth &&
+        allowRefresh &&
+        path != '/auth/refresh') {
+      final refreshed = await _refreshAccessToken();
+      if (refreshed) {
+        return _request(
+          method,
+          path,
+          body: body,
+          auth: auth,
+          allowRefresh: false,
+        );
+      }
     }
 
     dynamic decoded;

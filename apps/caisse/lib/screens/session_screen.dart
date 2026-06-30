@@ -5,7 +5,12 @@ import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../services/api_client.dart';
+import '../theme/app_colors.dart';
+import '../widgets/cashier_screen_header.dart';
+import '../widgets/message_banner.dart';
 import 'open_session_screen.dart';
+import 'pos_select_screen.dart';
+import '../theme/app_icons.dart';
 
 class SessionScreen extends StatefulWidget {
   const SessionScreen({super.key});
@@ -54,6 +59,23 @@ class _SessionScreenState extends State<SessionScreen> {
     }
   }
 
+  List<Widget> _headerActions(BuildContext context) {
+    return [
+      IconButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const PosSelectScreen(fromSettings: true),
+            ),
+          );
+        },
+        icon: Icon(AppIcons.store,
+            color: Colors.white.withValues(alpha: 0.9)),
+        tooltip: 'Changer de site',
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final api = context.watch<ApiClient>();
@@ -61,60 +83,73 @@ class _SessionScreenState extends State<SessionScreen> {
     final dateFmt = DateFormat('dd/MM/yyyy HH:mm');
 
     if (_closedSummary != null) {
-      final s = _closedSummary!;
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.check_circle, size: 64, color: Colors.green.shade600),
-              const SizedBox(height: 16),
-              Text(
-                'Session clôturée',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 16),
-              Text('Ventes : ${formatCdf(s.totalSales)} FC'),
-              Text('Factures : ${s.invoiceCount}'),
-              if (s.cashVariance != null)
-                Text(
-                  'Écart caisse : ${formatCdf(s.cashVariance!)} FC',
-                  style: TextStyle(
-                    color: s.cashVariance == 0 ? Colors.green : Colors.orange,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () {
-                  setState(() => _closedSummary = null);
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const OpenSessionScreen()),
-                  );
-                },
-                child: const Text('Nouvelle session'),
-              ),
-            ],
-          ),
-        ),
+      return _ClosedSummaryView(
+        summary: _closedSummary!,
+        onNewSession: () {
+          setState(() => _closedSummary = null);
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const OpenSessionScreen()),
+          );
+        },
       );
     }
 
     if (session == null) {
-      return Center(
+      return ColoredBox(
+        color: AppColors.background,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('Aucune session ouverte'),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const OpenSessionScreen()),
-                );
-              },
-              child: const Text('Ouvrir une session'),
+            CashierScreenHeader(
+              title: 'Session',
+              actions: _headerActions(context),
+            ),
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          color: AppColors.primarySoft,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(
+                          AppIcons.wallet,
+                          size: 36,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Aucune session ouverte',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Ouvrez une session pour commencer à encaisser.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: AppColors.muted),
+                      ),
+                      const SizedBox(height: 24),
+                      FilledButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const OpenSessionScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(AppIcons.lockOpen),
+                        label: const Text('Ouvrir une session'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -123,101 +158,290 @@ class _SessionScreenState extends State<SessionScreen> {
 
     final expected = session.openingCash + session.totalSales;
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.lock_open, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Session ouverte',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+    return ColoredBox(
+      color: AppColors.background,
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          CashierScreenHeader(
+            title: 'Session',
+            badge: 'Ouverte',
+            actions: _headerActions(context),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Caisse attendue',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withValues(alpha: 0.78),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                _row('Ouverte le', dateFmt.format(session.openedAt.toLocal())),
-                _row('Fond initial', '${formatCdf(session.openingCash)} FC'),
-                _row('Ventes encaissées', '${formatCdf(session.totalSales)} FC'),
-                _row('Nombre de factures', '${session.invoiceCount}'),
-                const Divider(height: 24),
-                _row(
-                  'Caisse attendue (espèces)',
-                  '${formatCdf(expected)} FC',
-                  bold: true,
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${formatCdf(expected)} FC',
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Depuis ${dateFmt.format(session.openedAt.toLocal())}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.68),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'Clôture de caisse',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _closingCtrl,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: InputDecoration(
-            labelText: 'Montant compté en caisse',
-            suffixText: 'FC',
-            border: const OutlineInputBorder(),
-            helperText: 'Attendu : ${formatCdf(expected)} FC',
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  _statTile(
+                    icon: AppIcons.piggyBank,
+                    label: 'Fond initial',
+                    value: '${formatCdf(session.openingCash)} FC',
+                  ),
+                  const Divider(height: 24),
+                  _statTile(
+                    icon: AppIcons.caisse,
+                    label: 'Ventes encaissées',
+                    value: '${formatCdf(session.totalSales)} FC',
+                    highlight: true,
+                  ),
+                  const Divider(height: 24),
+                  _statTile(
+                    icon: AppIcons.receipt,
+                    label: 'Nombre de factures',
+                    value: '${session.invoiceCount}',
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _notesCtrl,
-          maxLines: 2,
-          decoration: const InputDecoration(
-            labelText: 'Notes (optionnel)',
-            border: OutlineInputBorder(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+            child: Text(
+              'Clôture de caisse',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
           ),
-        ),
-        if (_error != null) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: TextField(
+              controller: _closingCtrl,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: InputDecoration(
+                labelText: 'Montant compté en caisse',
+                suffixText: 'FC',
+                prefixIcon: const Icon(AppIcons.calculator),
+                helperText: 'Attendu : ${formatCdf(expected)} FC',
+                filled: true,
+                fillColor: Colors.white,
+              ),
+            ),
+          ),
           const SizedBox(height: 12),
-          Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-        ],
-        const SizedBox(height: 16),
-        FilledButton.icon(
-          onPressed: _closing ? null : () => _closeSession(session),
-          style: FilledButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.error,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: TextField(
+              controller: _notesCtrl,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Notes (optionnel)',
+                prefixIcon: Icon(AppIcons.fileText),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+            ),
           ),
-          icon: _closing
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.lock),
-          label: const Text('Clôturer la session'),
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: MessageBanner(
+                message: _error!,
+                type: MessageBannerType.error,
+                onDismiss: () => setState(() => _error = null),
+              ),
+            ),
+          ],
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+            child: FilledButton.icon(
+              onPressed: _closing ? null : () => _closeSession(session),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                minimumSize: const Size.fromHeight(52),
+              ),
+              icon: _closing
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(AppIcons.lock),
+              label: const Text('Clôturer la session'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statTile({
+    required IconData icon,
+    required String label,
+    required String value,
+    bool highlight = false,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: highlight ? AppColors.primarySoft : AppColors.borderLight,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: highlight ? AppColors.primary : AppColors.muted,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: highlight ? 15 : 14,
+            color: highlight ? AppColors.primary : AppColors.text,
+          ),
         ),
       ],
     );
   }
+}
 
-  Widget _row(String label, String value, {bool bold = false}) {
+class _ClosedSummaryView extends StatelessWidget {
+  const _ClosedSummaryView({
+    required this.summary,
+    required this.onNewSession,
+  });
+
+  final CashSession summary;
+  final VoidCallback onNewSession;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: AppColors.background,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: AppColors.successSoft,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(
+                  AppIcons.circleCheck,
+                  size: 40,
+                  color: AppColors.success,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Session clôturée',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 20),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  children: [
+                    _summaryRow('Ventes', '${formatCdf(summary.totalSales)} FC'),
+                    _summaryRow('Factures', '${summary.invoiceCount}'),
+                    if (summary.cashVariance != null)
+                      _summaryRow(
+                        'Écart caisse',
+                        '${formatCdf(summary.cashVariance!)} FC',
+                        valueColor: summary.cashVariance == 0
+                            ? AppColors.success
+                            : AppColors.warning,
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: onNewSession,
+                child: const Text('Nouvelle session'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _summaryRow(String label, String value, {Color? valueColor}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
+          Text(label),
           Text(
             value,
-            style: TextStyle(fontWeight: bold ? FontWeight.bold : FontWeight.normal),
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: valueColor ?? AppColors.text,
+            ),
           ),
         ],
       ),
