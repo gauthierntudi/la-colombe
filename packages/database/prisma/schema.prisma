@@ -1,0 +1,381 @@
+// GES Boutique — Schéma Prisma
+// PostgreSQL (Neon) — Déploiement RDC, devise CDF
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  MANAGER
+  FACTURANT
+  CAISSIER
+}
+
+enum PointOfSaleType {
+  STORE // Point de vente (facturation + caisse)
+  DEPOT // Dépôt / entrepôt (stock uniquement)
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PAID
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentMethod {
+  CASH
+  MOBILE_MONEY
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum StockMovementType {
+  SALE_OUT
+  RESERVATION
+  RELEASE_RESERVATION
+  ADJUSTMENT
+  PURCHASE_IN
+  RETURN
+  TRANSFER_OUT
+  TRANSFER_IN
+}
+
+enum CashSessionStatus {
+  OPEN
+  CLOSED
+}
+
+// ─── Organisation & Config ───────────────────────────────────────────────────
+
+model ShopSettings {
+  id             String   @id @default(cuid())
+  name           String
+  address        String?
+  phone          String?
+  email          String?
+  currency       String   @default("CDF")
+  defaultTaxRate Decimal  @default(16) @db.Decimal(5, 2) // TVA RDC configurable
+  invoiceExpiryH     Int      @default(24) // heures avant expiration
+  country            String   @default("CD") // RDC
+  flexpaieApiKey     String?  // clé API Flexpaie (chiffrée en prod)
+  flexpaieMerchantId String?
+  flexpaieWebhookSecret String?
+  yocoIntegrationSecret String?  // secret SDK Yoco (app caisse Android)
+  createdAt          DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ─── Points de vente & dépôts ─────────────────────────────────────────────────
+
+model PointOfSale {
+  id             String          @id @default(cuid())
+  code           String          @unique // ex: KIN-01, LUB-DEPOT
+  name           String
+  type           PointOfSaleType @default(STORE)
+  address        String?
+  phone          String?
+  active         Boolean         @default(true)
+  invoicePrefix  String          @default("FAC")
+  invoiceNextNum     Int             @default(1)
+  yocoPrintEnabled   Boolean         @default(false) // imprimante POS Yoco (impression uniquement)
+  yocoDeviceId       String?         // identifiant terminal / imprimante Yoco
+  createdAt          DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  stock         ProductStock[]
+  movements     StockMovement[]
+  invoices      Invoice[]
+  cashSessions  CashSession[]
+  userAssignments UserPointOfSale[]
+  transfersFrom StockTransfer[] @relation("TransferFrom")
+  transfersTo   StockTransfer[] @relation("TransferTo")
+
+  @@index([type])
+  @@index([active])
+}
+
+// ─── Utilisateurs ────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  avatarUrl    String?
+  role         Role
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  pointOfSales  UserPointOfSale[]
+  invoices      Invoice[]         @relation("CreatedBy")
+  cashSessions  CashSession[]
+  stockMoves    StockMovement[]   @relation("PerformedBy")
+  transfers     StockTransfer[]   @relation("TransferBy")
+
+  @@index([role])
+}
+
+model UserPointOfSale {
+  id            String @id @default(cuid())
+  userId        String
+  pointOfSaleId String
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pointOfSale PointOfSale @relation(fields: [pointOfSaleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pointOfSaleId])
+  @@index([pointOfSaleId])
+}
+
+// ─── Catalogue ───────────────────────────────────────────────────────────────
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  sku           String   @unique
+  barcode       String?  @unique
+  description   String?
+  imageUrl      String?
+  categoryId    String?
+  unitPrice     Decimal  @db.Decimal(14, 0) // CDF — montants entiers
+  taxRate       Decimal  @db.Decimal(5, 2)
+  minStockLevel Int      @default(0)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  category     Category?       @relation(fields: [categoryId], references: [id])
+  stock        ProductStock[]
+  movements    StockMovement[]
+  invoiceLines InvoiceLine[]
+  transfers    StockTransferLine[]
+
+  @@index([categoryId])
+  @@index([barcode])
+  @@index([active])
+}
+
+model ProductStock {
+  id              String @id @default(cuid())
+  productId       String
+  pointOfSaleId   String
+  physicalStock   Int    @default(0)
+  reservedStock   Int    @default(0)
+  // availableStock = physicalStock - reservedStock (calculé côté app)
+
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  pointOfSale PointOfSale @relation(fields: [pointOfSaleId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, pointOfSaleId])
+  @@index([pointOfSaleId])
+  @@index([physicalStock])
+}
+
+model StockMovement {
+  id            String            @id @default(cuid())
+  productId     String
+  pointOfSaleId String
+  type          StockMovementType
+  quantity      Int // positif = entrée, négatif = sortie
+  reason        String?
+  invoiceId     String?
+  transferId    String?
+  userId        String?
+  createdAt     DateTime          @default(now())
+
+  product     Product        @relation(fields: [productId], references: [id])
+  pointOfSale PointOfSale    @relation(fields: [pointOfSaleId], references: [id])
+  invoice     Invoice?       @relation(fields: [invoiceId], references: [id])
+  transfer    StockTransfer? @relation(fields: [transferId], references: [id])
+  user        User?          @relation("PerformedBy", fields: [userId], references: [id])
+
+  @@index([productId, pointOfSaleId, createdAt])
+  @@index([type])
+  @@index([invoiceId])
+  @@index([transferId])
+}
+
+model StockTransfer {
+  id            String   @id @default(cuid())
+  reference     String   @unique
+  fromId        String
+  toId          String
+  status        String   @default("COMPLETED") // PENDING | COMPLETED | CANCELLED
+  notes         String?
+  createdById   String
+  createdAt     DateTime @default(now())
+  completedAt   DateTime?
+
+  from      PointOfSale         @relation("TransferFrom", fields: [fromId], references: [id])
+  to        PointOfSale         @relation("TransferTo", fields: [toId], references: [id])
+  createdBy User                @relation("TransferBy", fields: [createdById], references: [id])
+  lines     StockTransferLine[]
+  movements StockMovement[]
+
+  @@index([fromId])
+  @@index([toId])
+  @@index([createdAt])
+}
+
+model StockTransferLine {
+  id         String @id @default(cuid())
+  transferId String
+  productId  String
+  quantity   Int
+
+  transfer StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  product  Product       @relation(fields: [productId], references: [id])
+
+  @@index([transferId])
+}
+
+// ─── Clients (nom & téléphone optionnels) ────────────────────────────────────
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invoices Invoice[]
+
+  @@index([phone])
+}
+
+// ─── Factures ────────────────────────────────────────────────────────────────
+
+model Invoice {
+  id             String        @id @default(cuid())
+  number         String        @unique
+  status         InvoiceStatus @default(DRAFT)
+  pointOfSaleId  String
+  customerId     String?
+  customerName   String?
+  customerPhone  String?
+  subtotalHt     Decimal       @default(0) @db.Decimal(14, 0)
+  taxAmount      Decimal       @default(0) @db.Decimal(14, 0)
+  totalTtc       Decimal       @default(0) @db.Decimal(14, 0)
+  discountAmount Decimal       @default(0) @db.Decimal(14, 0)
+  notes          String?
+  createdById    String
+  cashSessionId  String?
+  validatedAt    DateTime?
+  paidAt         DateTime?
+  cancelledAt    DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  pointOfSale PointOfSale     @relation(fields: [pointOfSaleId], references: [id])
+  customer    Customer?       @relation(fields: [customerId], references: [id])
+  createdBy   User            @relation("CreatedBy", fields: [createdById], references: [id])
+  cashSession CashSession?    @relation(fields: [cashSessionId], references: [id])
+  lines       InvoiceLine[]
+  payments    Payment[]
+  stockMoves  StockMovement[]
+
+  @@index([status])
+  @@index([pointOfSaleId])
+  @@index([createdAt])
+  @@index([createdById])
+  @@index([number])
+}
+
+model InvoiceLine {
+  id              String  @id @default(cuid())
+  invoiceId       String
+  productId       String
+  productName     String // snapshot au moment de la facture
+  quantity        Int
+  unitPrice       Decimal @db.Decimal(14, 0)
+  taxRate         Decimal @db.Decimal(5, 2)
+  discountPercent Decimal @default(0) @db.Decimal(5, 2)
+  lineTotalHt     Decimal @db.Decimal(14, 0)
+  lineTax         Decimal @db.Decimal(14, 0)
+  lineTotalTtc    Decimal @db.Decimal(14, 0)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([invoiceId])
+}
+
+// ─── Paiements ───────────────────────────────────────────────────────────────
+
+model Payment {
+  id                    String        @id @default(cuid())
+  invoiceId             String
+  cashSessionId         String?
+  method                PaymentMethod
+  status                PaymentStatus @default(COMPLETED)
+  amount                Decimal       @db.Decimal(14, 0)
+  flexpaieTransactionId String?       @unique
+  flexpaieReference     String?
+  customerPhone         String?       // numéro Mobile Money (Flexpaie)
+  provider              String?       // ex: ORANGE, AIRTEL, VODACOM
+  createdAt             DateTime      @default(now())
+  completedAt           DateTime?
+
+  invoice     Invoice      @relation(fields: [invoiceId], references: [id])
+  cashSession CashSession? @relation(fields: [cashSessionId], references: [id])
+
+  @@index([invoiceId])
+  @@index([cashSessionId])
+  @@index([status])
+}
+
+// ─── Sessions caisse ─────────────────────────────────────────────────────────
+
+model CashSession {
+  id            String            @id @default(cuid())
+  userId        String
+  pointOfSaleId String
+  status        CashSessionStatus @default(OPEN)
+  openingCash   Decimal           @default(0) @db.Decimal(14, 0)
+  closingCash   Decimal?          @db.Decimal(14, 0)
+  expectedCash  Decimal?          @db.Decimal(14, 0)
+  cashVariance  Decimal?          @db.Decimal(14, 0)
+  totalMobileMoney Decimal           @default(0) @db.Decimal(14, 0)
+  totalSales       Decimal           @default(0) @db.Decimal(14, 0)
+  invoiceCount  Int               @default(0)
+  openedAt      DateTime          @default(now())
+  closedAt      DateTime?
+  notes         String?
+
+  user        User        @relation(fields: [userId], references: [id])
+  pointOfSale PointOfSale @relation(fields: [pointOfSaleId], references: [id])
+  payments    Payment[]
+  invoices    Invoice[]
+
+  @@index([userId, status])
+  @@index([pointOfSaleId, status])
+  @@index([openedAt])
+}

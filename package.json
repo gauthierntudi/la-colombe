@@ -1,0 +1,22 @@
+{
+  "name": "ges-boutique",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "postinstall": "pnpm db:generate",
+    "dev": "pnpm --filter @ges/admin dev",
+    "build": "pnpm --filter @ges/admin build",
+    "db:generate": "pnpm --filter @ges/database db:generate",
+    "db:migrate": "pnpm --filter @ges/database db:migrate",
+    "db:push": "pnpm --filter @ges/database db:push",
+    "db:seed": "pnpm --filter @ges/database db:seed",
+    "db:studio": "pnpm --filter @ges/database db:studio"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build
+dist/
+.next/
+out/
+build/
+
+# Prisma
+packages/database/prisma/migrations/**/migration_lock.toml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Flutter (apps/caisse)
+apps/caisse/.dart_tool/
+apps/caisse/build/
+apps/caisse/.flutter-plugins
+apps/caisse/.flutter-plugins-dependencies
+apps/caisse/.packages
+
+# Uploads produits (fichiers générés en runtime)
+apps/admin/public/uploads/products/*
+!apps/admin/public/uploads/products/.gitkeep
+*.log
+npm-debug.log*
