@@ -59,6 +59,34 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     _pollTimer = null;
   }
 
+  String _mmProviderLabel(String value) {
+    for (final p in mmProviders) {
+      if (p.value == value) return p.label;
+    }
+    return value;
+  }
+
+  Future<void> _openMobileMoneySheet() async {
+    final result = await showModalBottomSheet<_MobileMoneyResult>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      useSafeArea: false,
+      builder: (ctx) => _MobileMoneySheet(
+        initialPhone: _phoneCtrl.text,
+        initialProvider: _provider,
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _mode = PayMode.mobileMoney;
+        _phoneCtrl.text = result.phone;
+        _provider = result.provider;
+        _error = null;
+      });
+    }
+  }
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -243,7 +271,9 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
 
       final phone = _phoneCtrl.text.trim();
       if (phone.isEmpty) {
-        throw ApiException('Téléphone Mobile Money requis');
+        setState(() => _processing = false);
+        await _openMobileMoneySheet();
+        return;
       }
 
       final api = context.read<ApiClient>();
@@ -478,34 +508,17 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
         const SizedBox(height: 10),
         _PaymentModeSwitch(
           mode: _mode,
-          onChanged: (mode) => setState(() => _mode = mode),
+          onCashSelected: () => setState(() => _mode = PayMode.cash),
+          onMobileMoneyTap: _openMobileMoneySheet,
         ),
         const SizedBox(height: 14),
         _FixedAmountBanner(amount: inv.totalTtc),
         if (_mode == PayMode.mobileMoney) ...[
           const SizedBox(height: 14),
-          TextField(
-            controller: _phoneCtrl,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: 'Téléphone Mobile Money',
-              hintText: '+243812345678',
-              prefixIcon: Icon(AppIcons.phone),
-            ),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            initialValue: _provider,
-            decoration: const InputDecoration(
-              labelText: 'Opérateur',
-              prefixIcon: Icon(AppIcons.smartphone),
-            ),
-            items: mmProviders
-                .map((p) => DropdownMenuItem(value: p.value, child: Text(p.label)))
-                .toList(),
-            onChanged: (v) {
-              if (v != null) setState(() => _provider = v);
-            },
+          _MobileMoneySummary(
+            phone: _phoneCtrl.text,
+            providerLabel: _mmProviderLabel(_provider),
+            onTap: _openMobileMoneySheet,
           ),
         ],
         if (_error != null) ...[
@@ -524,11 +537,13 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
 class _PaymentModeSwitch extends StatelessWidget {
   const _PaymentModeSwitch({
     required this.mode,
-    required this.onChanged,
+    required this.onCashSelected,
+    required this.onMobileMoneyTap,
   });
 
   final PayMode mode;
-  final ValueChanged<PayMode> onChanged;
+  final VoidCallback onCashSelected;
+  final VoidCallback onMobileMoneyTap;
 
   @override
   Widget build(BuildContext context) {
@@ -539,7 +554,7 @@ class _PaymentModeSwitch extends StatelessWidget {
             label: 'Espèces',
             icon: AppIcons.payments,
             selected: mode == PayMode.cash,
-            onTap: () => onChanged(PayMode.cash),
+            onTap: onCashSelected,
           ),
         ),
         const SizedBox(width: 10),
@@ -548,7 +563,7 @@ class _PaymentModeSwitch extends StatelessWidget {
             label: 'Mobile Money',
             icon: AppIcons.smartphone,
             selected: mode == PayMode.mobileMoney,
-            onTap: () => onChanged(PayMode.mobileMoney),
+            onTap: onMobileMoneyTap,
           ),
         ),
       ],
@@ -607,6 +622,277 @@ class _PaymentModeOption extends StatelessWidget {
   }
 }
 
+class _MobileMoneyResult {
+  const _MobileMoneyResult({required this.phone, required this.provider});
+
+  final String phone;
+  final String provider;
+}
+
+class _MobileMoneySummary extends StatelessWidget {
+  const _MobileMoneySummary({
+    required this.phone,
+    required this.providerLabel,
+    required this.onTap,
+  });
+
+  final String phone;
+  final String providerLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPhone = phone.trim().isNotEmpty;
+
+    return Material(
+      color: AppColors.tileBackground,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.primarySoft,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  AppIcons.smartphone,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      providerLabel,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.text,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      hasPhone ? phone : 'Appuyez pour configurer',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: hasPhone ? AppColors.textSecondary : AppColors.muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(AppIcons.chevronRight, size: 20, color: AppColors.muted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileMoneySheet extends StatefulWidget {
+  const _MobileMoneySheet({
+    required this.initialPhone,
+    required this.initialProvider,
+  });
+
+  final String initialPhone;
+  final String initialProvider;
+
+  @override
+  State<_MobileMoneySheet> createState() => _MobileMoneySheetState();
+}
+
+class _MobileMoneySheetState extends State<_MobileMoneySheet> {
+  late final TextEditingController _phoneCtrl;
+  late String _provider;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _phoneCtrl = TextEditingController(text: widget.initialPhone);
+    _provider = widget.initialProvider;
+  }
+
+  @override
+  void dispose() {
+    _phoneCtrl.dispose();
+    super.dispose();
+  }
+
+  void _confirm() {
+    final phone = _phoneCtrl.text.trim();
+    if (phone.isEmpty) {
+      setState(() => _error = 'Indiquez le numéro Mobile Money');
+      return;
+    }
+    Navigator.pop(
+      context,
+      _MobileMoneyResult(phone: phone, provider: _provider),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    final inset = MediaQuery.viewInsetsOf(context).bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: inset),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.fromLTRB(24, 12, 24, 24 + bottom),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Mobile Money',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: AppColors.text,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Choisissez l\'opérateur et le numéro à débiter',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _phoneCtrl,
+              keyboardType: TextInputType.phone,
+              autofocus: widget.initialPhone.trim().isEmpty,
+              decoration: const InputDecoration(
+                labelText: 'Téléphone Mobile Money',
+                hintText: '+243812345678',
+                prefixIcon: Icon(AppIcons.phone),
+              ),
+              onChanged: (_) {
+                if (_error != null) setState(() => _error = null);
+              },
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Opérateur',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.muted,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...mmProviders.map((p) {
+              final selected = _provider == p.value;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Material(
+                  color: selected
+                      ? AppColors.primarySoft
+                      : AppColors.tileBackground,
+                  borderRadius: BorderRadius.circular(14),
+                  child: InkWell(
+                    onTap: () => setState(() => _provider = p.value),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            AppIcons.smartphone,
+                            size: 20,
+                            color: selected
+                                ? AppColors.primary
+                                : AppColors.muted,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              p.label,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.text,
+                              ),
+                            ),
+                          ),
+                          if (selected)
+                            const Icon(
+                              AppIcons.circleCheck,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+            if (_error != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                _error!,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.danger,
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: _confirm,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Text(
+                'Confirmer',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _FixedAmountBanner extends StatelessWidget {
   const _FixedAmountBanner({required this.amount});
 
@@ -640,7 +926,7 @@ class _FixedAmountBanner extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: AppColors.primary,
+              color: AppColors.amount,
             ),
           ),
         ],
@@ -1085,7 +1371,7 @@ class _TotalRow extends StatelessWidget {
           style: TextStyle(
             fontSize: emphasized ? 18 : 14,
             fontWeight: FontWeight.w700,
-            color: emphasized ? AppColors.primary : AppColors.text,
+            color: emphasized ? AppColors.amount : AppColors.text,
           ),
         ),
       ],

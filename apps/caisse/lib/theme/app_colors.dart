@@ -20,6 +20,7 @@ abstract final class AppColors {
   static Color infoSoft = AppPalette.light.infoSoft;
   static Color navBar = AppPalette.light.navBar;
   static Color tileBackground = AppPalette.light.tileBackground;
+  static Color amount = AppPalette.light.amount;
   static Color get inputFill => tileBackground;
 
   static void bind(AppPalette palette) {
@@ -39,6 +40,7 @@ abstract final class AppColors {
     infoSoft = palette.infoSoft;
     navBar = palette.navBar;
     tileBackground = palette.tileBackground;
+    amount = palette.amount;
   }
 
   static const primary = Color(0xFF0D30F5);

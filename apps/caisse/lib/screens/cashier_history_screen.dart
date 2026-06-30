@@ -125,7 +125,7 @@ class _CashierHistoryScreenState extends State<CashierHistoryScreen> {
                           '${formatCdf(totalSales)} FC',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
-                            color: AppColors.primary,
+                            color: AppColors.amount,
                             fontSize: 14,
                           ),
                         ),

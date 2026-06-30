@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../services/api_client.dart';
+import '../services/theme_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../widgets/app_empty_state.dart';
@@ -135,23 +136,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           },
         );
       case _HomeTab.newInvoice:
-        return const NewInvoiceScreen();
+        return NewInvoiceScreen();
       case _HomeTab.invoices:
-        return const InvoicesScreen();
+        return InvoicesScreen();
       case _HomeTab.pending:
         if (api.user?.role == 'CAISSIER' && api.openSession == null) {
-          return const OpenSessionScreen(embedded: true);
+          return OpenSessionScreen(embedded: true);
         }
-        return const PendingInvoicesScreen();
+        return PendingInvoicesScreen();
       case _HomeTab.history:
-        return const CashierHistoryScreen();
+        return CashierHistoryScreen();
       case _HomeTab.session:
         if (api.user?.role == 'CAISSIER' && api.openSession == null) {
-          return const OpenSessionScreen(embedded: true);
+          return OpenSessionScreen(embedded: true);
         }
-        return const SessionScreen();
+        return SessionScreen();
       case _HomeTab.profile:
-        return const CashierProfileScreen();
+        return CashierProfileScreen();
     }
   }
 
@@ -218,6 +219,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ThemeService>();
     final api = context.watch<ApiClient>();
     final user = api.user;
     final pos = api.activePos;

@@ -41,7 +41,7 @@ class AmountLabelLarge extends StatelessWidget {
     return Text(
       '${formatCdf(amount)}$suffix',
       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: AppColors.primary,
+            color: AppColors.amount,
             fontWeight: FontWeight.w800,
           ),
     );

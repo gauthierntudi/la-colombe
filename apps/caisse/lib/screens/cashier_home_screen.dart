@@ -546,7 +546,7 @@ class _NotificationBell extends StatelessWidget {
             children: [
               Icon(
                 AppIcons.bell,
-                color: AppColors.text,
+                color: const Color(0xFF111827),
                 size: 22,
               ),
               if (pendingCount > 0)
@@ -575,7 +575,7 @@ class _UpgradeBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -583,8 +583,9 @@ class _UpgradeBanner extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.05),

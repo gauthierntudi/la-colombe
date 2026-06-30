@@ -68,7 +68,7 @@ class _GesBoutiqueAppState extends State<GesBoutiqueApp> {
               return child ?? const SizedBox.shrink();
             },
             home: ListenableBuilder(
-              listenable: _api,
+              listenable: Listenable.merge([_api, widget.themeService]),
               builder: (context, _) {
                 if (!_api.isReady) {
                   return const Scaffold(
@@ -76,12 +76,12 @@ class _GesBoutiqueAppState extends State<GesBoutiqueApp> {
                   );
                 }
                 if (!_api.isAuthenticated) {
-                  return const LoginScreen();
+                  return LoginScreen();
                 }
                 if (_api.activePos == null) {
-                  return const PosSelectScreen();
+                  return PosSelectScreen();
                 }
-                return const HomeScreen();
+                return HomeScreen();
               },
             ),
           );

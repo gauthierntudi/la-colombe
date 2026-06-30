@@ -24,7 +24,7 @@ class InvoiceListTile extends StatelessWidget {
     final isPending = invoice.status == 'PENDING_PAYMENT';
 
     return Material(
-      color: Colors.white,
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -71,18 +71,20 @@ class InvoiceListTile extends StatelessWidget {
                               fontWeight: FontWeight.w700,
                               fontSize: 15,
                               color: AppColors.text,
+                              height: 1.1,
                             ),
                           ),
                         ),
                         if (showStatus) StatusBadge(status: invoice.status),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 1),
                     Text(
                       invoice.customerName ?? 'Client anonyme',
                       style: TextStyle(
                         fontSize: 14,
                         color: AppColors.textSecondary,
+                        height: 1.1,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -128,7 +130,7 @@ class InvoiceListTile extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
-                      color: AppColors.primary,
+                      color: AppColors.amount,
                     ),
                   ),
                   if (onTap != null) ...[

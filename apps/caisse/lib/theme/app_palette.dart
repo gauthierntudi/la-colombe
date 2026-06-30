@@ -44,8 +44,15 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final SystemUiOverlayStyle statusBarStyle;
   final SystemUiOverlayStyle statusBarOnSurfaceStyle;
 
+  static const _amountLight = Color(0xFF0D30F5);
+  static const _amountDark = Color(0xFF00C6FF);
+
   /// Fond des champs de formulaire — dérivé de [tileBackground].
   Color get inputFill => tileBackground;
+
+  /// Couleur des montants — dérivée du thème (cyan en dark).
+  Color get amount =>
+      background == dark.background ? _amountDark : _amountLight;
 
   static final light = AppPalette(
     background: Color(0xFFF0F4FA),

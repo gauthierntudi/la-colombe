@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../services/api_client.dart';
+import '../services/theme_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/message_banner.dart';
 import '../widgets/typewriter_greeting.dart';
@@ -62,8 +63,8 @@ class _LoginScreenState extends State<LoginScreen> {
       await api.login(_emailCtrl.text.trim(), _passwordCtrl.text);
       if (!mounted) return;
       final next = api.activePos != null
-          ? const HomeScreen()
-          : const PosSelectScreen();
+          ? HomeScreen()
+          : PosSelectScreen();
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => next),
       );
@@ -78,6 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ThemeService>();
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: _statusBarStyle,
       child: Scaffold(

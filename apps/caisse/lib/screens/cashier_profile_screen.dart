@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../services/api_client.dart';
+import '../services/theme_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_icons.dart';
 import '../widgets/cashier_bottom_nav_bar.dart';
@@ -44,6 +45,7 @@ class CashierProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ThemeService>();
     final api = context.watch<ApiClient>();
     final user = api.user;
     final pos = api.activePos;
@@ -57,59 +59,56 @@ class CashierProfileScreen extends StatelessWidget {
 
     return ColoredBox(
       color: AppColors.background,
-      child: Column(
-        children: [
-          _ProfileHeroHeader(user: user, roleLabel: roleLabel),
-          Expanded(
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: _ProfileHeroHeader(user: user, roleLabel: roleLabel),
+          ),
+          SliverToBoxAdapter(
             child: ColoredBox(
               color: AppColors.surface,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                      children: [
-                        _ProfileInfoTile(
-                          icon: AppIcons.user,
-                          value: user.name,
-                          label: 'Nom d\'utilisateur',
-                        ),
-                        const SizedBox(height: 12),
-                        _ProfileInfoTile(
-                          icon: AppIcons.mail,
-                          value: user.email,
-                          label: 'Adresse e-mail',
-                        ),
-                        const SizedBox(height: 12),
-                        _ProfileInfoTile(
-                          icon: AppIcons.settings,
-                          value: roleLabel,
-                          label: 'Rôle utilisateur',
-                        ),
-                        const SizedBox(height: 12),
-                        const ThemeToggleTile(),
-                        if (pos != null) ...[
-                          const SizedBox(height: 12),
-                          _ProfileInfoTile(
-                            icon: AppIcons.store,
-                            value: pos.name,
-                            label: 'Point de vente',
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const PosSelectScreen(fromSettings: true),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ],
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                child: Column(
+                  children: [
+                    _ProfileInfoTile(
+                      icon: AppIcons.user,
+                      value: user.name,
+                      label: 'Nom d\'utilisateur',
                     ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + navInset),
-                    child: FilledButton(
+                    const SizedBox(height: 12),
+                    _ProfileInfoTile(
+                      icon: AppIcons.mail,
+                      value: user.email,
+                      label: 'Adresse e-mail',
+                    ),
+                    const SizedBox(height: 12),
+                    _ProfileInfoTile(
+                      icon: AppIcons.settings,
+                      value: roleLabel,
+                      label: 'Rôle utilisateur',
+                    ),
+                    const SizedBox(height: 12),
+                    const ThemeToggleTile(),
+                    if (pos != null) ...[
+                      const SizedBox(height: 12),
+                      _ProfileInfoTile(
+                        icon: AppIcons.store,
+                        value: pos.name,
+                        label: 'Point de vente',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const PosSelectScreen(fromSettings: true),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    FilledButton(
                       onPressed: () => _confirmLogout(context),
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFF111827),
@@ -127,10 +126,15 @@ class CashierProfileScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    SizedBox(height: 16 + navInset),
+                  ],
+                ),
               ),
             ),
+          ),
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: ColoredBox(color: AppColors.surface),
           ),
         ],
       ),
