@@ -114,7 +114,7 @@ class _CashierHistoryScreenState extends State<CashierHistoryScreen> {
                         Expanded(
                           child: Text(
                             '${_paidToday.length} encaissement(s) aujourd\'hui',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w600,
                               color: AppColors.text,
                               fontSize: 13,
@@ -123,7 +123,7 @@ class _CashierHistoryScreenState extends State<CashierHistoryScreen> {
                         ),
                         Text(
                           '${formatCdf(totalSales)} FC',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w800,
                             color: AppColors.primary,
                             fontSize: 14,

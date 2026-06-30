@@ -45,7 +45,7 @@ class CashierScreenHeader extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
@@ -65,7 +65,7 @@ class CashierScreenHeader extends StatelessWidget {
                           ),
                           child: Text(
                             badge!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
                               fontSize: 13,

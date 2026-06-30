@@ -54,7 +54,7 @@ class CashierTransactionTile extends StatelessWidget {
                   children: [
                     Text(
                       invoice.customerName ?? invoice.number,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
                         color: AppColors.text,
@@ -65,7 +65,7 @@ class CashierTransactionTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       dateFmt.format(invoice.createdAt.toLocal()),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         color: AppColors.muted,
                       ),
@@ -78,7 +78,7 @@ class CashierTransactionTile extends StatelessWidget {
                 children: [
                   Text(
                     '+ ${formatCdf(invoice.totalTtc)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: AppColors.success,
                       fontSize: 14,
@@ -87,7 +87,7 @@ class CashierTransactionTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     invoice.number,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       color: AppColors.muted,
                     ),

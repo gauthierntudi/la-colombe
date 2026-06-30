@@ -5,8 +5,9 @@ import '../models/models.dart';
 import '../services/api_client.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_icons.dart';
-import '../widgets/cashier_screen_header.dart';
+import '../widgets/cashier_bottom_nav_bar.dart';
 import '../widgets/user_avatar.dart';
+import '../widgets/theme_toggle.dart';
 import 'pos_select_screen.dart';
 
 /// Profil caissier — compte, site et déconnexion.
@@ -29,25 +30,12 @@ class CashierProfileScreen extends StatelessWidget {
   }
 
   Future<void> _confirmLogout(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Déconnexion'),
-        content: const Text('Voulez-vous vraiment vous déconnecter ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.danger,
-            ),
-            child: const Text('Déconnexion'),
-          ),
-        ],
-      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      useSafeArea: false,
+      builder: (ctx) => const _LogoutConfirmSheet(),
     );
     if (confirmed == true && context.mounted) {
       await context.read<ApiClient>().logout();
@@ -59,66 +47,88 @@ class CashierProfileScreen extends StatelessWidget {
     final api = context.watch<ApiClient>();
     final user = api.user;
     final pos = api.activePos;
-    final session = api.openSession;
+    final navInset = cashierBottomNavHeight(context);
 
     if (user == null) {
-      return const ColoredBox(color: AppColors.background);
+      return ColoredBox(color: AppColors.background);
     }
+
+    final roleLabel = _roleLabel(user.role);
 
     return ColoredBox(
       color: AppColors.background,
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          const SliverToBoxAdapter(
-            child: CashierScreenHeader(
-              title: 'Mon compte',
-              subtitle: 'Profil et paramètres',
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: _ProfileCard(
-                user: user,
-                pos: pos,
-                session: session,
-                roleLabel: _roleLabel(user.role),
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: _ActionTile(
-                icon: AppIcons.store,
-                title: 'Changer de site',
-                subtitle: pos?.name ?? 'Aucun site sélectionné',
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const PosSelectScreen(fromSettings: true),
+      child: Column(
+        children: [
+          _ProfileHeroHeader(user: user, roleLabel: roleLabel),
+          Expanded(
+            child: ColoredBox(
+              color: AppColors.surface,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                      children: [
+                        _ProfileInfoTile(
+                          icon: AppIcons.user,
+                          value: user.name,
+                          label: 'Nom d\'utilisateur',
+                        ),
+                        const SizedBox(height: 12),
+                        _ProfileInfoTile(
+                          icon: AppIcons.mail,
+                          value: user.email,
+                          label: 'Adresse e-mail',
+                        ),
+                        const SizedBox(height: 12),
+                        _ProfileInfoTile(
+                          icon: AppIcons.settings,
+                          value: roleLabel,
+                          label: 'Rôle utilisateur',
+                        ),
+                        const SizedBox(height: 12),
+                        const ThemeToggleTile(),
+                        if (pos != null) ...[
+                          const SizedBox(height: 12),
+                          _ProfileInfoTile(
+                            icon: AppIcons.store,
+                            value: pos.name,
+                            label: 'Point de vente',
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const PosSelectScreen(fromSettings: true),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ],
                     ),
-                  );
-                },
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-              child: OutlinedButton.icon(
-                onPressed: () => _confirmLogout(context),
-                icon: const Icon(AppIcons.logOut, size: 20),
-                label: const Text('Déconnexion'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.danger,
-                  side: const BorderSide(color: AppColors.danger),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
                   ),
-                ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + navInset),
+                    child: FilledButton(
+                      onPressed: () => _confirmLogout(context),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF111827),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(52),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text(
+                        'Se déconnecter',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -128,175 +138,136 @@ class CashierProfileScreen extends StatelessWidget {
   }
 }
 
-class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({
+class _ProfileHeroHeader extends StatelessWidget {
+  const _ProfileHeroHeader({
     required this.user,
-    required this.pos,
-    required this.session,
     required this.roleLabel,
   });
 
   final AppUser user;
-  final PointOfSale? pos;
-  final CashSession? session;
   final String roleLabel;
 
+  static const _blueBodyHeight = 96.0;
+  static const _avatarOverlap = 44.0;
+  static const _avatarRadius = 42.0;
+  static const _whiteSheetLift = 24.0;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
+    final topInset = MediaQuery.paddingOf(context).top;
+
+    return SizedBox(
+      height: topInset + _blueBodyHeight + _avatarOverlap + 28,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          UserAvatarLight(
-            name: user.name,
-            imageUrl: user.avatarUrl,
-            radius: 36,
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: topInset + _blueBodyHeight + _avatarOverlap,
+            child: ColoredBox(color: AppColors.primary),
           ),
-          const SizedBox(height: 14),
-          Text(
-            user.name,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: AppColors.text,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            user.email,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.primarySoft,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              roleLabel,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primary,
+          Positioned(
+            left: 0,
+            right: 0,
+            top: topInset + _blueBodyHeight - _whiteSheetLift,
+            bottom: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(28),
+                  topRight: Radius.circular(28),
+                ),
               ),
             ),
           ),
-          if (pos != null) ...[
-            const SizedBox(height: 16),
-            const Divider(height: 1, color: AppColors.border),
-            const SizedBox(height: 16),
-            _InfoRow(
-              icon: AppIcons.store,
-              label: 'Site actif',
-              value: pos!.name,
+          Positioned(
+            left: 24,
+            right: 24,
+            top: topInset + _blueBodyHeight - _avatarOverlap,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                UserAvatarLight(
+                  name: user.name,
+                  imageUrl: user.avatarUrl,
+                  radius: _avatarRadius,
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 18),
+                          child: Text(
+                            user.name,
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.text,
+                              height: 1.1,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          roleLabel,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                            height: 1.2,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-          if (session != null) ...[
-            const SizedBox(height: 12),
-            _InfoRow(
-              icon: AppIcons.wallet,
-              label: 'Session',
-              value: '${session!.invoiceCount} vente(s) · ouverte',
-            ),
-          ],
+          ),
         ],
       ),
     );
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
+class _ProfileInfoTile extends StatelessWidget {
+  const _ProfileInfoTile({
     required this.icon,
-    required this.label,
     required this.value,
+    required this.label,
+    this.onTap,
   });
 
   final IconData icon;
-  final String label;
   final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: AppColors.muted),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.muted,
-                ),
-              ),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.text,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ActionTile extends StatelessWidget {
-  const _ActionTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
+  final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      color: AppColors.tileBackground,
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
-                  borderRadius: BorderRadius.circular(12),
+                width: 46,
+                height: 46,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: AppColors.primary, size: 20),
+                child: Icon(icon, color: Colors.white, size: 22),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -304,24 +275,27 @@ class _ActionTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
-                      style: const TextStyle(
+                      value,
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppColors.text,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 3),
                     Text(
-                      subtitle,
-                      style: const TextStyle(
+                      label,
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textSecondary,
+                        color: AppColors.muted,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 AppIcons.chevronRight,
                 size: 20,
                 color: AppColors.muted,
@@ -331,5 +305,100 @@ class _ActionTile extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _LogoutConfirmSheet extends StatelessWidget {
+  const _LogoutConfirmSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.paddingOf(context).bottom;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(24, 12, 24, 24 + bottom),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.dangerSoft,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                AppIcons.logOut,
+                color: AppColors.danger,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Déconnexion',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: AppColors.text,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Voulez-vous vraiment vous déconnecter ?',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      side: BorderSide(color: AppColors.border),
+                    ),
+                    child: const Text('Annuler'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.danger,
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text('Se déconnecter'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
   }
 }

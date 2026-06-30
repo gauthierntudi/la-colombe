@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_icons.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_theme.dart';
 
 /// Contrôleur pour ouvrir la recherche plein écran depuis l'extérieur.
@@ -63,7 +64,7 @@ class _FullscreenSearchState extends State<ExpandableFullscreenSearch> {
   void dispose() {
     _debounce?.cancel();
     if (_expanded) {
-      SystemChrome.setSystemUIOverlayStyle(AppTheme.statusBarLight);
+      SystemChrome.setSystemUIOverlayStyle(AppPalette.light.statusBarStyle);
     }
     widget.launcher._detach();
     _focusNode.dispose();
@@ -71,11 +72,11 @@ class _FullscreenSearchState extends State<ExpandableFullscreenSearch> {
   }
 
   void _applySearchStatusBar() {
-    SystemChrome.setSystemUIOverlayStyle(AppTheme.statusBarOnLight);
+    SystemChrome.setSystemUIOverlayStyle(AppTheme.statusBarOnLight(context));
   }
 
   void _restoreStatusBar() {
-    SystemChrome.setSystemUIOverlayStyle(AppTheme.statusBarLight);
+    SystemChrome.setSystemUIOverlayStyle(context.palette.statusBarStyle);
   }
 
   void _open() {
@@ -146,7 +147,7 @@ class _FullscreenSearchState extends State<ExpandableFullscreenSearch> {
         if (_expanded)
           Positioned.fill(
             child: AnnotatedRegion<SystemUiOverlayStyle>(
-              value: AppTheme.statusBarOnLight,
+              value: AppTheme.statusBarOnLight(context),
               child: Material(
                 color: AppColors.background,
                 child: SafeArea(
@@ -170,7 +171,7 @@ class _FullscreenSearchState extends State<ExpandableFullscreenSearch> {
                                 controller: widget.textController,
                                 focusNode: _focusNode,
                                 cursorColor: AppColors.primary,
-                                style: const TextStyle(color: AppColors.text),
+                                style: TextStyle(color: AppColors.text),
                                 decoration: _inputDecoration(
                                   suffix: _suffixIcon(),
                                 ).copyWith(
@@ -191,7 +192,7 @@ class _FullscreenSearchState extends State<ExpandableFullscreenSearch> {
                           ],
                         ),
                       ),
-                      const Divider(height: 1, color: AppColors.border),
+                      Divider(height: 1, color: AppColors.border),
                       Expanded(child: widget.results),
                     ],
                   ),

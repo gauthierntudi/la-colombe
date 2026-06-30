@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
 import '../theme/app_colors.dart';
+import '../widgets/cashier_bottom_nav_bar.dart';
 import '../widgets/cashier_screen_header.dart';
 import '../widgets/message_banner.dart';
 import 'open_session_screen.dart';
@@ -106,7 +107,12 @@ class _SessionScreenState extends State<SessionScreen> {
             Expanded(
               child: Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(32),
+                  padding: EdgeInsets.fromLTRB(
+                    32,
+                    32,
+                    32,
+                    32 + cashierBottomNavHeight(context),
+                  ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -129,7 +135,7 @@ class _SessionScreenState extends State<SessionScreen> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Ouvrez une session pour commencer à encaisser.',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: AppColors.muted),
@@ -157,157 +163,171 @@ class _SessionScreenState extends State<SessionScreen> {
     }
 
     final expected = session.openingCash + session.totalSales;
+    final navInset = cashierBottomNavHeight(context);
 
     return ColoredBox(
       color: AppColors.background,
-      child: ListView(
-        padding: EdgeInsets.zero,
+      child: Column(
         children: [
           CashierScreenHeader(
             title: 'Session',
             badge: 'Ouverte',
             actions: _headerActions(context),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    'Caisse attendue',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.78),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.only(top: 20),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Caisse attendue',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white.withValues(alpha: 0.78),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${formatCdf(expected)} FC',
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Depuis ${dateFmt.format(session.openedAt.toLocal())}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.68),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${formatCdf(expected)} FC',
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: -0.5,
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      children: [
+                        _statTile(
+                          icon: AppIcons.piggyBank,
+                          label: 'Fond initial',
+                          value: '${formatCdf(session.openingCash)} FC',
+                        ),
+                        const Divider(height: 24),
+                        _statTile(
+                          icon: AppIcons.caisse,
+                          label: 'Ventes encaissées',
+                          value: '${formatCdf(session.totalSales)} FC',
+                          highlight: true,
+                        ),
+                        const Divider(height: 24),
+                        _statTile(
+                          icon: AppIcons.receipt,
+                          label: 'Nombre de factures',
+                          value: '${session.invoiceCount}',
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Depuis ${dateFmt.format(session.openedAt.toLocal())}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.68),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Clôture de caisse',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.text,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        TextField(
+                          controller: _closingCtrl,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          decoration: InputDecoration(
+                            labelText: 'Montant compté en caisse',
+                            suffixText: 'FC',
+                            prefixIcon: const Icon(AppIcons.calculator),
+                            helperText: 'Attendu : ${formatCdf(expected)} FC',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _notesCtrl,
+                          maxLines: 2,
+                          decoration: InputDecoration(
+                            labelText: 'Notes (optionnel)',
+                            prefixIcon: Icon(AppIcons.fileText),
+                          ),
+                        ),
+                        if (_error != null) ...[
+                          const SizedBox(height: 12),
+                          MessageBanner(
+                            message: _error!,
+                            type: MessageBannerType.error,
+                            onDismiss: () => setState(() => _error = null),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          onPressed:
+                              _closing ? null : () => _closeSession(session),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.danger,
+                            minimumSize: const Size.fromHeight(52),
+                          ),
+                          icon: _closing
+                              ? SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(AppIcons.lock),
+                          label: const Text('Clôturer la session'),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Column(
-                children: [
-                  _statTile(
-                    icon: AppIcons.piggyBank,
-                    label: 'Fond initial',
-                    value: '${formatCdf(session.openingCash)} FC',
-                  ),
-                  const Divider(height: 24),
-                  _statTile(
-                    icon: AppIcons.caisse,
-                    label: 'Ventes encaissées',
-                    value: '${formatCdf(session.totalSales)} FC',
-                    highlight: true,
-                  ),
-                  const Divider(height: 24),
-                  _statTile(
-                    icon: AppIcons.receipt,
-                    label: 'Nombre de factures',
-                    value: '${session.invoiceCount}',
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Text(
-              'Clôture de caisse',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: TextField(
-              controller: _closingCtrl,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: InputDecoration(
-                labelText: 'Montant compté en caisse',
-                suffixText: 'FC',
-                prefixIcon: const Icon(AppIcons.calculator),
-                helperText: 'Attendu : ${formatCdf(expected)} FC',
-                filled: true,
-                fillColor: Colors.white,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: TextField(
-              controller: _notesCtrl,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Notes (optionnel)',
-                prefixIcon: Icon(AppIcons.fileText),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-            ),
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: MessageBanner(
-                message: _error!,
-                type: MessageBannerType.error,
-                onDismiss: () => setState(() => _error = null),
-              ),
-            ),
-          ],
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-            child: FilledButton.icon(
-              onPressed: _closing ? null : () => _closeSession(session),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.danger,
-                minimumSize: const Size.fromHeight(52),
-              ),
-              icon: _closing
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(AppIcons.lock),
-              label: const Text('Clôturer la session'),
+                ),
+                SizedBox(height: 20 + navInset),
+              ],
             ),
           ),
         ],
@@ -367,11 +387,13 @@ class _ClosedSummaryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final navInset = cashierBottomNavHeight(context);
+
     return ColoredBox(
       color: AppColors.background,
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + navInset),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

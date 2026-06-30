@@ -174,7 +174,7 @@ class _HistoryPreviewSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Text(
+            Text(
               'Historique récent',
               style: TextStyle(
                 fontSize: 16,
@@ -209,11 +209,11 @@ class _HistoryPreviewSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.border),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Icon(AppIcons.receipt, color: AppColors.muted),
                 SizedBox(width: 12),
@@ -243,11 +243,11 @@ class _HistoryPreviewSection extends StatelessWidget {
               icon: const Icon(AppIcons.history, size: 18),
               label: Text(
                 'Voir les $totalCount encaissements',
-                style: const TextStyle(fontWeight: FontWeight.w600),
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.border),
+                side: BorderSide(color: AppColors.border),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -323,7 +323,7 @@ class _DashboardHeader extends StatelessWidget {
                         ),
                         Text(
                           userName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -447,7 +447,7 @@ class _DashboardBalance extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               hideBalance ? '••• ••• •••' : formatCdf(salesTotal),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 42,
                 fontWeight: FontWeight.w800,
                 color: Colors.white,
@@ -544,7 +544,7 @@ class _NotificationBell extends StatelessWidget {
             alignment: Alignment.center,
             clipBehavior: Clip.none,
             children: [
-              const Icon(
+              Icon(
                 AppIcons.bell,
                 color: AppColors.text,
                 size: 22,
@@ -615,7 +615,7 @@ class _UpgradeBanner extends StatelessWidget {
                   children: [
                     Text(
                       '$count facture(s) en attente',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
                         color: AppColors.text,
@@ -632,7 +632,7 @@ class _UpgradeBanner extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 AppIcons.chevronRight,
                 color: AppColors.muted,
                 size: 22,

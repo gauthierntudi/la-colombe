@@ -1,29 +1,53 @@
 import 'package:flutter/material.dart';
 
-/// Palette alignée sur le dashboard admin La Colombe.
+import 'app_palette.dart';
+
+/// Palette sémantique — valeurs mises à jour via [bind] à chaque rebuild thème.
 abstract final class AppColors {
+  static Color background = AppPalette.light.background;
+  static Color backgroundSubtle = AppPalette.light.backgroundSubtle;
+  static Color surface = AppPalette.light.surface;
+  static Color surfaceMuted = AppPalette.light.surfaceMuted;
+  static Color text = AppPalette.light.text;
+  static Color textSecondary = AppPalette.light.textSecondary;
+  static Color muted = AppPalette.light.muted;
+  static Color border = AppPalette.light.border;
+  static Color borderLight = AppPalette.light.borderLight;
+  static Color primarySoft = AppPalette.light.primarySoft;
+  static Color successSoft = AppPalette.light.successSoft;
+  static Color warningSoft = AppPalette.light.warningSoft;
+  static Color dangerSoft = AppPalette.light.dangerSoft;
+  static Color infoSoft = AppPalette.light.infoSoft;
+  static Color navBar = AppPalette.light.navBar;
+  static Color tileBackground = AppPalette.light.tileBackground;
+  static Color get inputFill => tileBackground;
+
+  static void bind(AppPalette palette) {
+    background = palette.background;
+    backgroundSubtle = palette.backgroundSubtle;
+    surface = palette.surface;
+    surfaceMuted = palette.surfaceMuted;
+    text = palette.text;
+    textSecondary = palette.textSecondary;
+    muted = palette.muted;
+    border = palette.border;
+    borderLight = palette.borderLight;
+    primarySoft = palette.primarySoft;
+    successSoft = palette.successSoft;
+    warningSoft = palette.warningSoft;
+    dangerSoft = palette.dangerSoft;
+    infoSoft = palette.infoSoft;
+    navBar = palette.navBar;
+    tileBackground = palette.tileBackground;
+  }
+
   static const primary = Color(0xFF0D30F5);
   static const primaryDark = Color(0xFF0A26C4);
-  static const primarySoft = Color(0xFFE8ECFE);
-
-  static const background = Color(0xFFF4F6FB);
-  static const surface = Color(0xFFFFFFFF);
-  static const surfaceMuted = Color(0xFFF8FAFC);
-
-  static const text = Color(0xFF0F172A);
-  static const textSecondary = Color(0xFF475569);
-  static const muted = Color(0xFF94A3B8);
-  static const border = Color(0xFFE2E8F0);
-  static const borderLight = Color(0xFFF1F5F9);
 
   static const success = Color(0xFF059669);
-  static const successSoft = Color(0xFFD1FAE5);
   static const warning = Color(0xFFD97706);
-  static const warningSoft = Color(0xFFFEF3C7);
   static const danger = Color(0xFFDC2626);
-  static const dangerSoft = Color(0xFFFEE2E2);
   static const info = Color(0xFF0284C7);
-  static const infoSoft = Color(0xFFE0F2FE);
 
   static Color statusColor(String status) {
     switch (status) {

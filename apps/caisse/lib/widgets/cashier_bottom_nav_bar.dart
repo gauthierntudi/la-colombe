@@ -50,7 +50,7 @@ class CashierBottomNavBar extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(16, 0, 16, bottom + 12),
       child: Container(
         decoration: ShapeDecoration(
-          color: Colors.white,
+          color: AppColors.navBar,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(74),
           ),

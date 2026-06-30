@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 
 import '../services/api_client.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_theme.dart';
 import '../widgets/message_banner.dart';
 import '../widgets/typewriter_greeting.dart';
+import '../widgets/theme_toggle.dart';
 import 'home_screen.dart';
 import 'pos_select_screen.dart';
 import '../theme/app_icons.dart';
@@ -155,41 +155,44 @@ class _LoginScreenState extends State<LoginScreen> {
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeOutCubic,
               width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(32)),
                 boxShadow: [
                   BoxShadow(
-                    color: Color(0x1A0D30F5),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     blurRadius: 24,
-                    offset: Offset(0, -4),
+                    offset: const Offset(0, -4),
                   ),
                 ],
               ),
               child: SafeArea(
                 top: false,
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    28,
-                    32,
-                    28,
-                    MediaQuery.viewInsetsOf(context).bottom > 0 ? 16 : 24,
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Text(
-                          'Connexion',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.text,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
+                child: Stack(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        28,
+                        32,
+                        28,
+                        MediaQuery.viewInsetsOf(context).bottom > 0 ? 16 : 24,
+                      ),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              'Connexion',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.text,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
                         const SizedBox(height: 28),
                         _LoginField(
                           controller: _emailCtrl,
@@ -302,6 +305,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                   ),
+                    ),
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: ThemeToggleButton(
+                        iconColor: AppColors.text,
+                        backgroundColor: AppColors.primarySoft,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -344,19 +357,19 @@ class _LoginField extends StatelessWidget {
       obscureText: obscureText,
       onFieldSubmitted: onFieldSubmitted,
       validator: validator,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 15,
         color: AppColors.text,
         fontWeight: FontWeight.w500,
       ),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(
+        hintStyle: TextStyle(
           color: AppColors.muted,
           fontWeight: FontWeight.w400,
         ),
         filled: true,
-        fillColor: const Color(0xFFF3F5F9),
+        fillColor: AppColors.inputFill,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         prefixIcon: Icon(icon, color: AppColors.muted, size: 22),
         suffixIcon: suffix,

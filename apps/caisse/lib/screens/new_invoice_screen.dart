@@ -168,7 +168,7 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
                         ),
                         title: Text(
                           p.name,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                         subtitle: Text(
                           '${p.sku} · ${formatCdf(p.unitPrice)} FC · Stock ${p.availableStock ?? 0}',
@@ -224,7 +224,7 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
                                 children: [
                                   Text(
                                     l.product.name,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -257,7 +257,7 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
                             AmountLabel(
                               amount: l.lineTotalTtc,
                               compact: true,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 14,
                               ),
@@ -343,7 +343,7 @@ class _QtyControl extends StatelessWidget {
           ),
           Text(
             '$quantity',
-            style: const TextStyle(fontWeight: FontWeight.w700),
+            style: TextStyle(fontWeight: FontWeight.w700),
           ),
           IconButton(
             visualDensity: VisualDensity.compact,

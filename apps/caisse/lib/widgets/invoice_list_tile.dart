@@ -67,7 +67,7 @@ class InvoiceListTile extends StatelessWidget {
                         Expanded(
                           child: Text(
                             invoice.number,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 15,
                               color: AppColors.text,
@@ -80,7 +80,7 @@ class InvoiceListTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       invoice.customerName ?? 'Client anonyme',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         color: AppColors.textSecondary,
                       ),
@@ -92,20 +92,20 @@ class InvoiceListTile extends StatelessWidget {
                       children: [
                         Text(
                           dateFmt.format(invoice.createdAt.toLocal()),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             color: AppColors.muted,
                           ),
                         ),
                         if (invoice.customerPhone != null) ...[
-                          const Text(
+                          Text(
                             ' · ',
                             style: TextStyle(color: AppColors.muted),
                           ),
                           Flexible(
                             child: Text(
                               invoice.customerPhone!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.muted,
                               ),
@@ -125,7 +125,7 @@ class InvoiceListTile extends StatelessWidget {
                 children: [
                   Text(
                     '${formatCdf(invoice.totalTtc)} FC',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
                       color: AppColors.primary,
@@ -133,7 +133,7 @@ class InvoiceListTile extends StatelessWidget {
                   ),
                   if (onTap != null) ...[
                     const SizedBox(height: 6),
-                    const Icon(
+                    Icon(
                       AppIcons.chevronRight,
                       color: AppColors.muted,
                       size: 20,

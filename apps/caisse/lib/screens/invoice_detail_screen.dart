@@ -15,6 +15,7 @@ import '../widgets/app_loading.dart';
 import '../widgets/message_banner.dart';
 import '../widgets/product_image.dart';
 import '../widgets/status_badge.dart';
+import '../widgets/user_avatar.dart';
 import '../theme/app_icons.dart';
 
 class InvoiceDetailScreen extends StatefulWidget {
@@ -124,7 +125,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
             if (changeAmount != null && changeAmount > 0)
               Text(
                 'Monnaie : ${formatCdf(changeAmount)} FC',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
           ],
         ),
@@ -414,7 +415,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
                   Icon(AppIcons.smartphone, color: AppColors.info, size: 20),
                   SizedBox(width: 8),
@@ -430,13 +431,13 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
               const SizedBox(height: 8),
               Text(
                 _pendingMessage ?? 'Confirmation en cours...',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
                 ),
               ),
               if (!_isMockMm)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(top: 8),
                   child: Text(
                     'Vérification automatique du statut...',
@@ -466,7 +467,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        Text(
           'Mode de paiement',
           style: TextStyle(
             fontSize: 13,
@@ -576,7 +577,7 @@ class _PaymentModeOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.white,
+          color: selected ? AppColors.primary : AppColors.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: selected ? AppColors.primary : AppColors.border,
@@ -622,9 +623,9 @@ class _FixedAmountBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(AppIcons.lock, size: 18, color: AppColors.primary),
+          Icon(AppIcons.lock, size: 18, color: AppColors.primary),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text(
               'Montant à encaisser',
               style: TextStyle(
@@ -636,7 +637,7 @@ class _FixedAmountBanner extends StatelessWidget {
           ),
           Text(
             '${formatCdf(amount)} FC',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
               color: AppColors.primary,
@@ -720,7 +721,7 @@ class _InvoiceDetailHeader extends StatelessWidget {
                         Flexible(
                           child: Text(
                             invoice.number,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
@@ -758,24 +759,13 @@ class _InvoiceDetailHeader extends StatelessWidget {
           Text(
             '${formatCdf(invoice.totalTtc)} FC',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 34,
               fontWeight: FontWeight.w800,
               color: Colors.white,
               letterSpacing: -1,
             ),
           ),
-          if (invoice.pointOfSaleName != null) ...[
-            const SizedBox(height: 10),
-            Text(
-              invoice.pointOfSaleName!,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white.withValues(alpha: 0.7),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -789,31 +779,51 @@ class _CustomerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final displayName = invoice.customerName?.trim();
+    final hasName = displayName != null && displayName.isNotEmpty;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Text(
-            'Client',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: AppColors.muted,
+          UserAvatarLight(
+            name: hasName ? displayName : '?',
+            radius: 24,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (hasName)
+                  Text(
+                    displayName,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.text,
+                    ),
+                  ),
+                if (invoice.customerPhone != null) ...[
+                  if (hasName) const SizedBox(height: 4),
+                  Text(
+                    invoice.customerPhone!,
+                    style: TextStyle(
+                      fontSize: hasName ? 14 : 16,
+                      fontWeight: hasName ? FontWeight.w500 : FontWeight.w700,
+                      color: hasName ? AppColors.textSecondary : AppColors.text,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          const SizedBox(height: 10),
-          if (invoice.customerName != null)
-            _DetailRow(icon: AppIcons.user, label: invoice.customerName!),
-          if (invoice.customerPhone != null) ...[
-            if (invoice.customerName != null) const SizedBox(height: 8),
-            _DetailRow(icon: AppIcons.phone, label: invoice.customerPhone!),
-          ],
         ],
       ),
     );
@@ -829,7 +839,7 @@ class _LinesCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border),
       ),
@@ -840,14 +850,14 @@ class _LinesCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
             child: Text(
               'Articles (${lines.length})',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: AppColors.text,
               ),
             ),
           ),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: AppColors.border),
           ...lines.asMap().entries.map((entry) {
             final i = entry.key;
             final line = entry.value;
@@ -873,7 +883,7 @@ class _LinesCard extends StatelessWidget {
                           children: [
                             Text(
                               line.productName,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
                                 color: AppColors.text,
@@ -882,7 +892,7 @@ class _LinesCard extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               '${line.quantity} × ${formatCdf(line.unitPrice)} FC',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.muted,
                               ),
@@ -895,7 +905,7 @@ class _LinesCard extends StatelessWidget {
                   ),
                 ),
                 if (i < lines.length - 1)
-                  const Divider(height: 1, color: AppColors.borderLight),
+                  Divider(height: 1, color: AppColors.borderLight),
               ],
             );
           }),
@@ -921,7 +931,7 @@ class _TotalsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border),
       ),
@@ -933,7 +943,7 @@ class _TotalsCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           _TotalRow(label: 'TVA', value: '${formatCdf(taxAmount)} FC'),
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Divider(height: 1, color: AppColors.border),
           ),
@@ -991,7 +1001,7 @@ class _PaymentsCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       paymentMethodLabels[p.method] ?? p.method,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         color: AppColors.text,
                       ),
@@ -999,7 +1009,7 @@ class _PaymentsCard extends StatelessWidget {
                   ),
                   Text(
                     '${formatCdf(p.amount)} FC',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: AppColors.text,
                     ),
@@ -1030,7 +1040,7 @@ class _BottomBar extends StatelessWidget {
         12 + MediaQuery.paddingOf(context).bottom,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.border.withValues(alpha: 0.6))),
         boxShadow: [
           BoxShadow(
@@ -1041,33 +1051,6 @@ class _BottomBar extends StatelessWidget {
         ],
       ),
       child: child,
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: AppColors.primary),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.text,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

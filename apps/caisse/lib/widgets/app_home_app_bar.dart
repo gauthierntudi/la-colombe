@@ -81,7 +81,7 @@ class AppHomeAppBar extends StatelessWidget implements PreferredSizeWidget {
                   const SizedBox(width: 4),
                   Text(
                     '${session!.invoiceCount}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: AppColors.success,

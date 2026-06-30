@@ -85,7 +85,7 @@ class _PosTile extends StatelessWidget {
                     pos.code.length >= 2
                         ? pos.code.substring(0, 2).toUpperCase()
                         : pos.code.toUpperCase(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
@@ -100,7 +100,7 @@ class _PosTile extends StatelessWidget {
                   children: [
                     Text(
                       pos.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
                       ),
@@ -113,7 +113,7 @@ class _PosTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 AppIcons.chevronRight,
                 size: 16,
                 color: AppColors.muted,

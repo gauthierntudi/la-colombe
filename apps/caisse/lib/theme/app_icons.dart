@@ -35,12 +35,16 @@ abstract final class AppIcons {
   static const info = LucideIcons.info;
   static const refresh = LucideIcons.refreshCw;
   static const sliders = LucideIcons.slidersHorizontal;
+  static const moon = LucideIcons.moon;
+  static const sun = LucideIcons.sun;
   static const circle = LucideIcons.circle;
 
   // Contenu
   static const user = LucideIcons.user;
   static const phone = LucideIcons.phone;
   static const mail = LucideIcons.mail;
+  static const camera = LucideIcons.camera;
+  static const settings = LucideIcons.settings;
   static const package = LucideIcons.package;
   static const printer = LucideIcons.printer;
   static const smartphone = LucideIcons.smartphone;

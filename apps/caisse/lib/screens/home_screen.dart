@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_theme.dart';
+import '../theme/app_palette.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_home_app_bar.dart';
 import '../widgets/app_loading.dart';
@@ -270,8 +270,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: useCashierNav
-          ? AppTheme.statusBarLight
-          : SystemUiOverlayStyle.dark,
+          ? context.palette.statusBarStyle
+          : context.palette.statusBarOnSurfaceStyle,
       child: Scaffold(
       extendBody: useCashierNav,
       appBar: showAppBar
@@ -315,7 +315,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       bottomNavigationBar: useCashierNav
           ? null
           : Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(top: BorderSide(color: AppColors.border)),
               ),
               child: NavigationBar(
