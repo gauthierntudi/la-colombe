@@ -4,6 +4,14 @@ Dashboard Next.js + API REST sur [Vercel](https://vercel.com), base PostgreSQL s
 
 **Dépôt** : [github.com/gauthierntudi/la-colombe](https://github.com/gauthierntudi/la-colombe)
 
+**Production** : [https://la-colombe-admin-nine.vercel.app](https://la-colombe-admin-nine.vercel.app/login)
+
+| URL | Lien |
+|-----|------|
+| Dashboard | https://la-colombe-admin-nine.vercel.app/login |
+| API | https://la-colombe-admin-nine.vercel.app/api/v1 |
+| Health | https://la-colombe-admin-nine.vercel.app/api/v1/health |
+
 ## 1. Vercel — créer le projet
 
 1. Importer le dépôt `gauthierntudi/la-colombe` sur Vercel.
@@ -21,7 +29,7 @@ Copier depuis `apps/admin/.env.example` :
 | `DATABASE_URL` | Oui | Connection string Neon (pooled) |
 | `JWT_SECRET` | Oui | `openssl rand -base64 48` |
 | `JWT_REFRESH_SECRET` | Oui | `openssl rand -base64 48` |
-| `NEXT_PUBLIC_APP_URL` | Oui | URL Vercel, ex. `https://la-colombe.vercel.app` |
+| `NEXT_PUBLIC_APP_URL` | Oui | `https://la-colombe-admin-nine.vercel.app` |
 | `S3_BUCKET` | Oui* | Images produits / avatars |
 | `S3_REGION` | Oui* | Région AWS |
 | `S3_ACCESS_KEY_ID` | Oui* | Clé IAM |
@@ -52,16 +60,16 @@ Une fois le dashboard déployé, lancer l’app avec l’URL de production :
 
 ```bash
 cd apps/caisse
-flutter run --dart-define=API_BASE_URL=https://VOTRE-DOMAINE.vercel.app/api/v1
+flutter run --dart-define=API_BASE_URL=https://la-colombe-admin-nine.vercel.app/api/v1
 ```
 
 Sur un appareil physique, remplacer par l’URL Vercel (HTTPS).
 
 ## 5. Vérifications post-déploiement
 
-- [ ] `GET https://VOTRE-DOMAINE.vercel.app/api/v1/health` (si route health) ou login dashboard
+- [x] `GET https://la-colombe-admin-nine.vercel.app/api/v1/health` → `{"status":"ok",...}`
 - [ ] Connexion admin : `admin@ges.local` / `admin123`
-- [ ] Login mobile avec `API_BASE_URL` pointant vers Vercel
+- [ ] Login mobile avec `API_BASE_URL=https://la-colombe-admin-nine.vercel.app/api/v1`
 - [ ] Upload image produit (S3 configuré)
 
 ## 6. Développement local

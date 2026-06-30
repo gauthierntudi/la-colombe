@@ -23,12 +23,19 @@ flutter run
 
 ### URL API
 
-| Plateforme        | URL API                          |
-|-------------------|----------------------------------|
-| Android émulateur | `http://10.0.2.2:3000/api/v1`    |
-| iOS / macOS       | `http://localhost:3000/api/v1`   |
+| Environnement | URL API |
+|---------------|---------|
+| **Production (Vercel)** | `https://la-colombe-admin-nine.vercel.app/api/v1` |
+| Android émulateur (local) | `http://10.0.2.2:3000/api/v1` |
+| iOS / macOS (local) | `http://localhost:3000/api/v1` |
 
-Appareil physique :
+**Production** — appareil physique ou émulateur :
+
+```bash
+flutter run --dart-define=API_BASE_URL=https://la-colombe-admin-nine.vercel.app/api/v1
+```
+
+**Local** — appareil physique sur le même réseau :
 
 ```bash
 flutter run --dart-define=API_BASE_URL=http://192.168.1.10:3000/api/v1

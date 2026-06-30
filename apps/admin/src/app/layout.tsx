@@ -7,7 +7,15 @@ export const metadata: Metadata = {
   title: "La Colombe — Admin",
   description: "Dashboard de gestion — maison La Colombe",
   icons: {
-    icon: "/images/icon-app.png",
+    icon: [
+      { url: "/images/icon-app.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [{ url: "/images/icon-app.png", type: "image/png", sizes: "180x180" }],
+    shortcut: "/images/icon-app.png",
+  },
+  appleWebApp: {
+    title: "La Colombe",
+    statusBarStyle: "default",
   },
 };
 

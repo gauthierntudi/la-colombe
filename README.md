@@ -2,7 +2,7 @@
 
 Système de gestion boutique pour la **RDC** : administration web et application mobile Android (facturation + caisse selon le rôle).
 
-**Dépôt GitHub** : [gauthierntudi/la-colombe](https://github.com/gauthierntudi/la-colombe) · **Déploiement** : [docs/DEPLOY.md](docs/DEPLOY.md)
+**Dépôt GitHub** : [gauthierntudi/la-colombe](https://github.com/gauthierntudi/la-colombe) · **Admin (prod)** : [la-colombe-admin-nine.vercel.app](https://la-colombe-admin-nine.vercel.app/login) · **Déploiement** : [docs/DEPLOY.md](docs/DEPLOY.md)
 
 **Devise** : CDF · **Mobile Money** : Flexpaie API · **Impression** : Yoco POS (Android)
 
@@ -71,7 +71,7 @@ pnpm dev
 
 ```bash
 cd apps/caisse
-flutter run --dart-define=API_BASE_URL=https://VOTRE-DOMAINE.vercel.app/api/v1
+flutter run --dart-define=API_BASE_URL=https://la-colombe-admin-nine.vercel.app/api/v1
 ```
 
 ## Documentation

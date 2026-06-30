@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AuthUser, clearSession, getUser } from "@/lib/client-api";
@@ -39,7 +40,15 @@ export default function DashboardLayout({
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--bg)]">
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-4">
+          <Image
+            src="/images/icon-app.png"
+            alt="La Colombe"
+            width={56}
+            height={56}
+            className="w-14 h-14 rounded-2xl object-cover shadow-[var(--shadow-md)]"
+            priority
+          />
           <div className="w-8 h-8 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
           <p className="text-sm text-[var(--muted)]">Chargement...</p>
         </div>
