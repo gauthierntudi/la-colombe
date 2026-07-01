@@ -6,6 +6,7 @@ import '../models/models.dart';
 import '../services/api_client.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_empty_state.dart';
+import '../widgets/app_error_state.dart';
 import '../widgets/app_loading.dart';
 import '../widgets/cashier_screen_header.dart';
 import '../widgets/cashier_transaction_tile.dart';
@@ -24,8 +25,9 @@ class CashierHistoryScreen extends StatefulWidget {
 }
 
 class _CashierHistoryScreenState extends State<CashierHistoryScreen> {
-  bool _loading = true;
+  bool _loading = false;
   List<InvoiceSummary> _paidToday = [];
+  String? _error;
 
   @override
   void initState() {
@@ -42,16 +44,20 @@ class _CashierHistoryScreenState extends State<CashierHistoryScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
-      final paid = await context.read<ApiClient>().listInvoices(
-            status: 'PAID',
-            from: DateTime.now(),
-          );
+      final paid = await context.read<ApiClient>().listPaidInvoicesToday();
       if (!mounted) return;
       setState(() => _paidToday = paid);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.message);
     } catch (_) {
-      // silencieux
+      if (!mounted) return;
+      setState(() => _error = 'Impossible de charger l\'historique');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -157,6 +163,11 @@ class _CashierHistoryScreenState extends State<CashierHistoryScreen> {
               const SliverFillRemaining(
                 hasScrollBody: false,
                 child: Center(child: AppLoading()),
+              )
+            else if (_error != null)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: AppErrorState(message: _error!, onRetry: _load),
               )
             else if (_paidToday.isEmpty)
               const SliverFillRemaining(

@@ -165,6 +165,7 @@ class InvoiceSummary {
     required this.status,
     required this.totalTtc,
     required this.createdAt,
+    this.paidAt,
     this.customerName,
     this.customerPhone,
   });
@@ -174,8 +175,11 @@ class InvoiceSummary {
   final String status;
   final int totalTtc;
   final DateTime createdAt;
+  final DateTime? paidAt;
   final String? customerName;
   final String? customerPhone;
+
+  DateTime get paidOrCreatedAt => paidAt ?? createdAt;
 
   factory InvoiceSummary.fromJson(Map<String, dynamic> json) => InvoiceSummary(
         id: json['id'] as String,
@@ -183,6 +187,9 @@ class InvoiceSummary {
         status: json['status'] as String,
         totalTtc: (json['totalTtc'] as num).toInt(),
         createdAt: DateTime.parse(json['createdAt'] as String),
+        paidAt: json['paidAt'] != null
+            ? DateTime.parse(json['paidAt'] as String)
+            : null,
         customerName: json['customerName'] as String?,
         customerPhone: json['customerPhone'] as String?,
       );
@@ -243,16 +250,29 @@ class PosConfig {
 }
 
 class ShopSettings {
-  ShopSettings({required this.name, this.address, this.phone});
+  ShopSettings({
+    required this.name,
+    this.address,
+    this.phone,
+    this.rccm,
+    this.idNat,
+    this.taxNumber,
+  });
 
   final String name;
   final String? address;
   final String? phone;
+  final String? rccm;
+  final String? idNat;
+  final String? taxNumber;
 
   factory ShopSettings.fromJson(Map<String, dynamic> json) => ShopSettings(
         name: json['name'] as String,
         address: json['address'] as String?,
         phone: json['phone'] as String?,
+        rccm: json['rccm'] as String?,
+        idNat: json['idNat'] as String?,
+        taxNumber: json['taxNumber'] as String?,
       );
 }
 
@@ -328,11 +348,11 @@ class InvoiceDetail extends InvoiceSummary {
     required super.createdAt,
     super.customerName,
     super.customerPhone,
+    super.paidAt,
     required this.subtotalHt,
     required this.taxAmount,
     required this.lines,
     this.expiresAt,
-    this.paidAt,
     this.pointOfSaleName,
     this.pointOfSaleCode,
     this.payments = const [],
@@ -342,7 +362,6 @@ class InvoiceDetail extends InvoiceSummary {
   final int taxAmount;
   final List<InvoiceLine> lines;
   final DateTime? expiresAt;
-  final DateTime? paidAt;
   final String? pointOfSaleName;
   final String? pointOfSaleCode;
   final List<InvoicePayment> payments;

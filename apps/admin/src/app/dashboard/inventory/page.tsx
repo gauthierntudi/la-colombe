@@ -586,6 +586,7 @@ export default function InventoryPage() {
                 onChange={setMovementDateTo}
                 min={movementDateFrom || undefined}
                 clearable
+                align="end"
                 className="min-w-[11rem]"
               />
             </div>

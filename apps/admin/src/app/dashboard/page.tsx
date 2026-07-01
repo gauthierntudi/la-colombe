@@ -22,11 +22,7 @@ import {
   LowStockAlerts,
   type LowStockAlertRow,
 } from "@/components/dashboard/low-stock-alerts";
-import {
-  daysAgoIso,
-  formatDisplayDate,
-  todayIso,
-} from "@/lib/date-utils";
+import { formatDisplayDate, todayIso } from "@/lib/date-utils";
 
 const CATEGORY_COLORS = ["#0d30f5", "#f59e0b", "#10b981", "#8b5cf6"];
 
@@ -65,22 +61,37 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   const [pointOfSaleId, setPointOfSaleId] = useState("");
-  const [dateFrom, setDateFrom] = useState(() => daysAgoIso(30));
+  const [dateFrom, setDateFrom] = useState(todayIso);
   const [dateTo, setDateTo] = useState(todayIso);
 
   const selectedSite = sites.find((s) => s.id === pointOfSaleId);
+  const isTodayView = dateFrom === dateTo && dateFrom === todayIso();
+  const isSingleDay = dateFrom === dateTo;
 
   const periodLabel = useMemo(() => {
-    if (dateFrom && dateTo) {
-      return `${formatDisplayDate(dateFrom)} — ${formatDisplayDate(dateTo)}`;
-    }
-    return undefined;
-  }, [dateFrom, dateTo]);
+    if (!dateFrom || !dateTo) return undefined;
+    if (isTodayView) return "Aujourd'hui";
+    if (isSingleDay) return formatDisplayDate(dateFrom);
+    return `${formatDisplayDate(dateFrom)} — ${formatDisplayDate(dateTo)}`;
+  }, [dateFrom, dateTo, isTodayView, isSingleDay]);
 
   const periodBadge = useMemo(() => {
     if (selectedSite) return selectedSite.code;
+    if (isTodayView) return "Aujourd'hui";
+    if (isSingleDay) return formatDisplayDate(dateFrom);
     return "Période";
-  }, [selectedSite]);
+  }, [selectedSite, isTodayView, isSingleDay, dateFrom]);
+
+  const salesHint = useMemo(() => {
+    if (selectedSite) {
+      return isTodayView
+        ? `Factures payées aujourd'hui · ${selectedSite.name}`
+        : `Factures payées · ${selectedSite.name}`;
+    }
+    return isTodayView
+      ? "Factures payées aujourd'hui"
+      : "Factures payées sur la période";
+  }, [selectedSite, isTodayView]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -195,11 +206,7 @@ export default function DashboardPage() {
         <KpiCard
           label="Chiffre d'affaires"
           value={summary ? formatCdf(summary.salesLast30Days) : "—"}
-          hint={
-            selectedSite
-              ? `Factures payées · ${selectedSite.name}`
-              : "Factures payées sur la période"
-          }
+          hint={salesHint}
           badge={periodBadge}
           icon={ShoppingBag}
           tone="primary"
@@ -208,7 +215,13 @@ export default function DashboardPage() {
         <KpiCard
           label="Factures payées"
           value={summary?.invoicesLast30Days ?? "—"}
-          hint={selectedSite ? selectedSite.code : "Sur la période sélectionnée"}
+          hint={
+            selectedSite
+              ? selectedSite.code
+              : isTodayView
+                ? "Payées aujourd'hui"
+                : "Sur la période sélectionnée"
+          }
           badge={periodBadge}
           icon={Receipt}
           tone="info"

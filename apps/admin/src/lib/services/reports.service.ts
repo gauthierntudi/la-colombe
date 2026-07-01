@@ -316,7 +316,7 @@ export async function getDashboardSummary(params?: {
     params?.from ??
     (() => {
       const d = new Date(to);
-      d.setDate(d.getDate() - 30);
+      d.setHours(0, 0, 0, 0);
       return d;
     })();
 

@@ -20,7 +20,7 @@ class CashierTransactionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -28,7 +28,7 @@ class CashierTransactionTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.border),
           ),
@@ -64,7 +64,7 @@ class CashierTransactionTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      dateFmt.format(invoice.createdAt.toLocal()),
+                      dateFmt.format(invoice.paidOrCreatedAt.toLocal()),
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.muted,

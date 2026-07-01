@@ -279,13 +279,14 @@ class ApiClient extends ChangeNotifier {
   Future<List<InvoiceSummary>> listInvoices({
     String? status,
     DateTime? from,
+    int limit = 50,
   }) async {
     final pos = _activePos;
     if (pos == null) throw ApiException('Sélectionnez un point de vente');
 
     final params = <String, String>{
       'pointOfSaleId': pos.id,
-      'limit': '50',
+      'limit': '$limit',
     };
     if (status != null) params['status'] = status;
     if (from != null) {
@@ -301,6 +302,17 @@ class ApiClient extends ChangeNotifier {
     return (json['data'] as List<dynamic>)
         .map((e) => InvoiceSummary.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  /// Encaissements du jour — filtre local sur [InvoiceSummary.paidAt].
+  Future<List<InvoiceSummary>> listPaidInvoicesToday() async {
+    final paid = await listInvoices(status: 'PAID', limit: 200);
+    final today = DateTime.now();
+    final todayList = paid
+        .where((inv) => _isSameLocalDay(inv.paidOrCreatedAt, today))
+        .toList()
+      ..sort((a, b) => b.paidOrCreatedAt.compareTo(a.paidOrCreatedAt));
+    return todayList;
   }
 
   Future<InvoiceSummary> createAndValidateInvoice({
@@ -546,4 +558,10 @@ String _localDateParam(DateTime date) {
   final month = local.month.toString().padLeft(2, '0');
   final day = local.day.toString().padLeft(2, '0');
   return '${local.year}-$month-$day';
+}
+
+bool _isSameLocalDay(DateTime a, DateTime b) {
+  final la = a.toLocal();
+  final lb = b.toLocal();
+  return la.year == lb.year && la.month == lb.month && la.day == lb.day;
 }

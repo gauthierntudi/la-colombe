@@ -74,10 +74,7 @@ class _PendingInvoicesScreenState extends State<PendingInvoicesScreen> {
 
       List<InvoiceSummary> toPrint = [];
       if (search.trim().isEmpty) {
-        final paidToday = await api.listInvoices(
-          status: 'PAID',
-          from: DateTime.now(),
-        );
+        final paidToday = await api.listPaidInvoicesToday();
         toPrint = paidToday
             .where((inv) => !tracker.isPrinted(inv.id))
             .toList();

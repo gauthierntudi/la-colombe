@@ -1464,6 +1464,13 @@ body {
     animation: slideUp 0.18s ease;
   }
 
+  .date-picker-popup-portal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 200;
+  }
+
   .date-picker-header {
     display: flex;
     align-items: center;

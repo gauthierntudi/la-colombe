@@ -20,6 +20,9 @@ type ShopSettings = {
   address: string | null;
   phone: string | null;
   email: string | null;
+  rccm: string | null;
+  idNat: string | null;
+  taxNumber: string | null;
   currency: string;
   defaultTaxRate: number;
   invoiceExpiryH: number;
@@ -38,6 +41,9 @@ const emptyForm = {
   address: "",
   phone: "",
   email: "",
+  rccm: "",
+  idNat: "",
+  taxNumber: "",
   defaultTaxRate: "16",
   invoiceExpiryH: "24",
   flexpaieMerchantId: "",
@@ -101,6 +107,9 @@ export default function SettingsPage() {
           address: s.address ?? "",
           phone: s.phone ?? "",
           email: s.email ?? "",
+          rccm: s.rccm ?? "",
+          idNat: s.idNat ?? "",
+          taxNumber: s.taxNumber ?? "",
           defaultTaxRate: String(s.defaultTaxRate),
           invoiceExpiryH: String(s.invoiceExpiryH),
           flexpaieMerchantId: s.flexpaieMerchantId ?? "",
@@ -140,6 +149,9 @@ export default function SettingsPage() {
         address: form.address.trim() || null,
         phone: form.phone.trim() || null,
         email: form.email.trim() || null,
+        rccm: form.rccm.trim() || null,
+        idNat: form.idNat.trim() || null,
+        taxNumber: form.taxNumber.trim() || null,
         defaultTaxRate: parseFloat(form.defaultTaxRate),
         invoiceExpiryH: parseInt(form.invoiceExpiryH, 10),
         flexpaieMerchantId: form.flexpaieMerchantId.trim() || null,
@@ -235,7 +247,7 @@ export default function SettingsPage() {
                   <SectionHeader
                     icon={Building2}
                     title="Organisation"
-                    description="Identité de la boutique affichée sur les documents"
+                    description="Identité et mentions légales affichées sur les factures"
                   />
 
                   <div className="space-y-4">
@@ -274,6 +286,33 @@ export default function SettingsPage() {
                           value={form.email}
                           onChange={(e) => setForm({ ...form, email: e.target.value })}
                           placeholder="contact@boutique.cd"
+                        />
+                      </FormField>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <FormField label="RCCM">
+                        <input
+                          className="input-field"
+                          value={form.rccm}
+                          onChange={(e) => setForm({ ...form, rccm: e.target.value })}
+                          placeholder="CD/KIN/RCCM/..."
+                        />
+                      </FormField>
+                      <FormField label="ID Nat">
+                        <input
+                          className="input-field"
+                          value={form.idNat}
+                          onChange={(e) => setForm({ ...form, idNat: e.target.value })}
+                          placeholder="Numéro d'identification"
+                        />
+                      </FormField>
+                      <FormField label="No Impôt">
+                        <input
+                          className="input-field"
+                          value={form.taxNumber}
+                          onChange={(e) => setForm({ ...form, taxNumber: e.target.value })}
+                          placeholder="Numéro d'impôt"
                         />
                       </FormField>
                     </div>
@@ -428,6 +467,15 @@ export default function SettingsPage() {
                     value={meta.country === "CD" ? "RDC" : meta.country}
                   />
                   <SummaryRow label="TVA active" value={`${form.defaultTaxRate} %`} />
+                  {(form.rccm || form.idNat || form.taxNumber) && (
+                    <>
+                      {form.rccm && <SummaryRow label="RCCM" value={form.rccm} />}
+                      {form.idNat && <SummaryRow label="ID Nat" value={form.idNat} />}
+                      {form.taxNumber && (
+                        <SummaryRow label="No Impôt" value={form.taxNumber} />
+                      )}
+                    </>
+                  )}
                   <SummaryRow
                     label="Expiration"
                     value={`${form.invoiceExpiryH} h`}

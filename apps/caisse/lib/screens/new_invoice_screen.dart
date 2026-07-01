@@ -38,6 +38,12 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
 
   int get _totalTtc => _lines.fold(0, (s, l) => s + l.lineTotalTtc);
 
+  Set<String> get _cartProductIds =>
+      _lines.map((l) => l.product.id).toSet();
+
+  List<Product> get _selectableResults =>
+      _results.where((p) => !_cartProductIds.contains(p.id)).toList();
+
   Future<void> _search() async {
     setState(() {
       _searching = true;
@@ -155,37 +161,49 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
                 onSubmitted: (_) => _search(),
               ),
               const SizedBox(height: 12),
-              if (_results.isNotEmpty)
-                Card(
-                  child: Column(
-                    children: _results.map((p) {
-                      final inStock = (p.availableStock ?? 0) > 0;
-                      return ListTile(
-                        leading: ProductImage(
-                          name: p.name,
-                          imageUrl: p.imageUrl,
-                          size: 40,
-                        ),
-                        title: Text(
-                          p.name,
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Text(
-                          '${p.sku} · ${formatCdf(p.unitPrice)} FC · Stock ${p.availableStock ?? 0}',
-                        ),
-                        trailing: IconButton.filled(
-                          style: IconButton.styleFrom(
-                            backgroundColor: inStock
-                                ? AppColors.primary
-                                : AppColors.border,
+              if (_results.isNotEmpty) ...[
+                if (_selectableResults.isEmpty)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'Tous les produits trouvés sont déjà dans le panier.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  )
+                else
+                  Card(
+                    child: Column(
+                      children: _selectableResults.map((p) {
+                        final inStock = (p.availableStock ?? 0) > 0;
+                        return ListTile(
+                          leading: ProductImage(
+                            name: p.name,
+                            imageUrl: p.imageUrl,
+                            size: 40,
                           ),
-                          icon: const Icon(AppIcons.plus, size: 20),
-                          onPressed: inStock ? () => _addProduct(p) : null,
-                        ),
-                      );
-                    }).toList(),
+                          title: Text(
+                            p.name,
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: Text(
+                            '${p.sku} · ${formatCdf(p.unitPrice)} FC · Stock ${p.availableStock ?? 0}',
+                          ),
+                          trailing: IconButton.filled(
+                            style: IconButton.styleFrom(
+                              backgroundColor: inStock
+                                  ? AppColors.primary
+                                  : AppColors.border,
+                            ),
+                            icon: const Icon(AppIcons.plus, size: 20),
+                            onPressed: inStock ? () => _addProduct(p) : null,
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
-                ),
+              ],
               if (_lines.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Row(

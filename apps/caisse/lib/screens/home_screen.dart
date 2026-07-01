@@ -112,10 +112,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     try {
       final tracker = context.read<ReceiptPrintTracker>();
       final pending = await api.searchPendingInvoices('');
-      final paidToday = await api.listInvoices(
-        status: 'PAID',
-        from: DateTime.now(),
-      );
+      final paidToday = await api.listPaidInvoicesToday();
       final toPrint =
           paidToday.where((inv) => !tracker.isPrinted(inv.id)).length;
       if (!mounted) return;
@@ -315,7 +312,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           IndexedStack(
             index: selectedTab,
             children: tabs
-                .map((t) => _bodyForTab(t, api, tabs, currentTab))
+                .map(
+                  (t) => KeyedSubtree(
+                    key: ValueKey(t),
+                    child: _bodyForTab(t, api, tabs, currentTab),
+                  ),
+                )
                 .toList(),
           ),
           if (useCashierNav)

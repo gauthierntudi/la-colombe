@@ -70,6 +70,20 @@ export function InvoiceModal({
     return sum + ht + tax;
   }, 0);
 
+  function productsForLine(lineIndex: number) {
+    const currentId = lines[lineIndex]?.productId;
+    const usedElsewhere = new Set(
+      lines
+        .map((l, idx) => (idx === lineIndex ? null : l.productId))
+        .filter((id): id is string => !!id)
+    );
+    return products.filter(
+      (p) => p.id === currentId || !usedElsewhere.has(p.id)
+    );
+  }
+
+  const canAddLine = lines.length < products.length;
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const resolved = lines
@@ -174,7 +188,13 @@ export function InvoiceModal({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">Lignes</p>
-            <button type="button" className="btn btn-ghost text-xs" onClick={() => setLines((l) => [...l, emptyLine()])}>
+            <button
+              type="button"
+              className="btn btn-ghost text-xs"
+              onClick={() => setLines((l) => [...l, emptyLine()])}
+              disabled={!canAddLine}
+              title={canAddLine ? undefined : "Tous les produits sont déjà ajoutés"}
+            >
               <Plus size={14} />
               Ajouter
             </button>
@@ -194,7 +214,7 @@ export function InvoiceModal({
                   required
                 >
                   <option value="">— Produit —</option>
-                  {products.map((p) => (
+                  {productsForLine(i).map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.sku} — {p.name} ({formatCdf(p.unitPrice)})
                     </option>

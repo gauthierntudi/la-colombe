@@ -32,7 +32,7 @@ function parseSummaryDateRange(searchParams: URLSearchParams) {
     ? new Date(fromParam)
     : (() => {
         const d = new Date(to);
-        d.setDate(d.getDate() - 30);
+        d.setHours(0, 0, 0, 0);
         return d;
       })();
   return { from, to };

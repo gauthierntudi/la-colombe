@@ -32,6 +32,9 @@ export async function getShopSettings() {
     address: settings.address,
     phone: settings.phone,
     email: settings.email,
+    rccm: settings.rccm,
+    idNat: settings.idNat,
+    taxNumber: settings.taxNumber,
     currency: settings.currency,
     defaultTaxRate: Number(settings.defaultTaxRate),
     invoiceExpiryH: settings.invoiceExpiryH,
@@ -73,6 +76,9 @@ export async function updateShopSettings(data: {
   address?: string | null;
   phone?: string | null;
   email?: string | null;
+  rccm?: string | null;
+  idNat?: string | null;
+  taxNumber?: string | null;
   defaultTaxRate?: number;
   invoiceExpiryH?: number;
   flexpaieMerchantId?: string | null;
@@ -93,6 +99,9 @@ export async function updateShopSettings(data: {
   if (data.address !== undefined) updateData.address = data.address?.trim() || null;
   if (data.phone !== undefined) updateData.phone = data.phone?.trim() || null;
   if (data.email !== undefined) updateData.email = data.email?.trim() || null;
+  if (data.rccm !== undefined) updateData.rccm = data.rccm?.trim() || null;
+  if (data.idNat !== undefined) updateData.idNat = data.idNat?.trim() || null;
+  if (data.taxNumber !== undefined) updateData.taxNumber = data.taxNumber?.trim() || null;
   if (data.defaultTaxRate !== undefined) updateData.defaultTaxRate = data.defaultTaxRate;
   if (data.invoiceExpiryH !== undefined) updateData.invoiceExpiryH = data.invoiceExpiryH;
   if (data.flexpaieMerchantId !== undefined) {

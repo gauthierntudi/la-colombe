@@ -15,7 +15,24 @@ class ReceiptPrintService {
     final buf = StringBuffer()
       ..writeln(shop.name.toUpperCase())
       ..writeln('BON DE SORTIE')
-      ..writeln('=' * 32)
+      ..writeln('=' * 32);
+
+    if (shop.rccm != null && shop.rccm!.isNotEmpty) {
+      buf.writeln('RCCM    : ${shop.rccm}');
+    }
+    if (shop.idNat != null && shop.idNat!.isNotEmpty) {
+      buf.writeln('ID Nat  : ${shop.idNat}');
+    }
+    if (shop.taxNumber != null && shop.taxNumber!.isNotEmpty) {
+      buf.writeln('No Impôt: ${shop.taxNumber}');
+    }
+    if ((shop.rccm?.isNotEmpty ?? false) ||
+        (shop.idNat?.isNotEmpty ?? false) ||
+        (shop.taxNumber?.isNotEmpty ?? false)) {
+      buf.writeln('-' * 32);
+    }
+
+    buf
       ..writeln('Facture : ${invoice.number}')
       ..writeln('Site    : ${invoice.pointOfSaleName ?? ''}')
       ..writeln('Date    : ${dateFmt.format((invoice.paidAt ?? invoice.createdAt).toLocal())}');

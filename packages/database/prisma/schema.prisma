@@ -68,6 +68,9 @@ model ShopSettings {
   address        String?
   phone          String?
   email          String?
+  rccm           String?  // Registre du commerce
+  idNat          String?  // Identification nationale
+  taxNumber      String?  // Numéro d'impôt
   currency       String   @default("CDF")
   defaultTaxRate Decimal  @default(16) @db.Decimal(5, 2) // TVA RDC configurable
   invoiceExpiryH     Int      @default(24) // heures avant expiration

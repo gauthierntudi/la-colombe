@@ -66,7 +66,7 @@ class _CashierHomeScreenState extends State<CashierHomeScreen> {
       final api = context.read<ApiClient>();
       final results = await Future.wait([
         api.searchPendingInvoices(''),
-        api.listInvoices(status: 'PAID', from: DateTime.now()),
+        api.listPaidInvoicesToday(),
       ]);
       if (!mounted) return;
       setState(() {
