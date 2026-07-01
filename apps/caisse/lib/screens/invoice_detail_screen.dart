@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
 import '../services/receipt_print_service.dart';
+import '../services/receipt_print_tracker.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../widgets/amount_label.dart';
@@ -108,9 +109,9 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     }
   }
 
-  Future<void> _printReceipt() async {
+  Future<bool> _printReceipt() async {
     final inv = _invoice;
-    if (inv == null || inv.status != 'PAID') return;
+    if (inv == null || inv.status != 'PAID') return false;
     setState(() => _processing = true);
     try {
       final api = context.read<ApiClient>();
@@ -120,15 +121,46 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
         shop: shop,
         posConfig: _posConfig,
       );
+      if (mounted) {
+        await context.read<ReceiptPrintTracker>().markPrinted(inv.id);
+      }
+      return true;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Impression impossible : $e')),
         );
       }
+      return false;
     } finally {
       if (mounted) setState(() => _processing = false);
     }
+  }
+
+  Future<void> _showPaymentSuccessSheet({
+    required String invoiceNumber,
+    required int totalTtc,
+    int? changeAmount,
+  }) async {
+    if (!mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      useSafeArea: false,
+      builder: (ctx) => _PaymentSuccessSheet(
+        invoiceNumber: invoiceNumber,
+        totalTtc: totalTtc,
+        changeAmount: changeAmount,
+        yocoEnabled: _posConfig?.yocoPrintEnabled == true,
+        onPrint: () async {
+          Navigator.pop(ctx);
+          await _printReceipt();
+        },
+        onDone: () => Navigator.pop(ctx),
+      ),
+    );
   }
 
   Future<void> _onPaymentSuccess({int? changeAmount}) async {
@@ -139,42 +171,11 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     if (!mounted) return;
 
     final updated = _invoice;
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        icon: const Icon(AppIcons.circleCheck, color: Colors.green, size: 48),
-        title: const Text('Encaissement réussi'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Facture ${updated?.number ?? inv.number}'),
-            Text('${formatCdf(updated?.totalTtc ?? inv.totalTtc)} FC — Payée'),
-            if (changeAmount != null && changeAmount > 0)
-              Text(
-                'Monnaie : ${formatCdf(changeAmount)} FC',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-          ],
-        ),
-        actions: [
-          if (updated?.status == 'PAID')
-            TextButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                _printReceipt();
-              },
-              child: const Text('Imprimer bon'),
-            ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
+    await _showPaymentSuccessSheet(
+      invoiceNumber: updated?.number ?? inv.number,
+      totalTtc: updated?.totalTtc ?? inv.totalTtc,
+      changeAmount: changeAmount,
     );
-
-    if (mounted) Navigator.of(context).pop(true);
   }
 
   Future<void> _payCash() async {
@@ -326,9 +327,12 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
 
   Widget _buildContent(InvoiceDetail inv, DateFormat dateFmt) {
     final api = context.watch<ApiClient>();
+    final printTracker = context.watch<ReceiptPrintTracker>();
     final canPay = inv.status == 'PENDING_PAYMENT' &&
         (api.user?.role != 'CAISSIER' || api.hasOpenSession);
     final waitingMm = _pendingPaymentId != null;
+    final needsPrint =
+        inv.status == 'PAID' && !printTracker.isPrinted(inv.id);
 
     return Column(
       children: [
@@ -362,6 +366,13 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                   message:
                       'Expire le ${dateFmt.format(inv.expiresAt!.toLocal())}',
                   type: MessageBannerType.warning,
+                ),
+              ],
+              if (needsPrint) ...[
+                const SizedBox(height: 12),
+                const MessageBanner(
+                  message: 'Bon de sortie non imprimé — vous pouvez l\'imprimer ci-dessous',
+                  type: MessageBannerType.info,
                 ),
               ],
               if (canPay && !waitingMm) ...[
@@ -421,9 +432,13 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
               onPressed: _processing ? null : _printReceipt,
               icon: const Icon(AppIcons.printer),
               label: Text(
-                _posConfig?.yocoPrintEnabled == true
-                    ? 'Imprimer bon de sortie (Yoco)'
-                    : 'Imprimer bon de sortie',
+                needsPrint
+                    ? (_posConfig?.yocoPrintEnabled == true
+                        ? 'Imprimer le bon (Yoco)'
+                        : 'Imprimer le bon de sortie')
+                    : (_posConfig?.yocoPrintEnabled == true
+                        ? 'Réimprimer le bon (Yoco)'
+                        : 'Réimprimer le bon de sortie'),
               ),
             ),
           ),
@@ -888,6 +903,132 @@ class _MobileMoneySheetState extends State<_MobileMoneySheet> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PaymentSuccessSheet extends StatelessWidget {
+  const _PaymentSuccessSheet({
+    required this.invoiceNumber,
+    required this.totalTtc,
+    required this.yocoEnabled,
+    required this.onPrint,
+    required this.onDone,
+    this.changeAmount,
+  });
+
+  final String invoiceNumber;
+  final int totalTtc;
+  final int? changeAmount;
+  final bool yocoEnabled;
+  final VoidCallback onPrint;
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.paddingOf(context).bottom;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(24, 12, 24, 24 + bottom),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.border,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppColors.successSoft,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              AppIcons.circleCheck,
+              color: AppColors.success,
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Encaissement réussi',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: AppColors.text,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Facture $invoiceNumber',
+            style: TextStyle(
+              fontSize: 15,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${formatCdf(totalTtc)} FC — Payée',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.amount,
+            ),
+          ),
+          if (changeAmount != null && changeAmount! > 0) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Monnaie : ${formatCdf(changeAmount!)} FC',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.text,
+              ),
+            ),
+          ],
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: onPrint,
+            icon: const Icon(AppIcons.printer),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            label: Text(
+              yocoEnabled ? 'Imprimer le bon (Yoco)' : 'Imprimer le bon de sortie',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton(
+            onPressed: onDone,
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              side: BorderSide(color: AppColors.border),
+            ),
+            child: const Text('Terminer'),
+          ),
+        ],
       ),
     );
   }

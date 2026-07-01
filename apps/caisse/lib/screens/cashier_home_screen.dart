@@ -18,11 +18,14 @@ import '../theme/app_icons.dart';
 class CashierHomeScreen extends StatefulWidget {
   const CashierHomeScreen({
     super.key,
+    this.isActive = false,
     required this.onEncaisser,
     required this.onSession,
     required this.onChangePos,
     required this.onVoirHistorique,
   });
+
+  final bool isActive;
 
   final VoidCallback onEncaisser;
   final VoidCallback onSession;
@@ -46,7 +49,15 @@ class _CashierHomeScreenState extends State<CashierHomeScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
+    if (widget.isActive) _load();
+  }
+
+  @override
+  void didUpdateWidget(CashierHomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _load();
+    }
   }
 
   Future<void> _load() async {

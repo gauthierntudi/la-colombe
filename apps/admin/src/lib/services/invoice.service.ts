@@ -161,14 +161,22 @@ export async function listInvoices(params: {
   const where = {
     ...(pointOfSaleId ? { pointOfSaleId } : {}),
     ...(status ? { status } : {}),
-    ...(from || to
+    ...(status === InvoiceStatus.PAID && (from || to)
       ? {
-          createdAt: {
+          paidAt: {
             ...(from ? { gte: from } : {}),
             ...(to ? { lte: to } : {}),
+            not: null,
           },
         }
-      : {}),
+      : from || to
+        ? {
+            createdAt: {
+              ...(from ? { gte: from } : {}),
+              ...(to ? { lte: to } : {}),
+            },
+          }
+        : {}),
     ...(search
       ? {
           OR: [
@@ -188,7 +196,7 @@ export async function listInvoices(params: {
         createdBy: { select: { id: true, name: true } },
         _count: { select: { lines: true } },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: status === InvoiceStatus.PAID ? { paidAt: "desc" } : { createdAt: "desc" },
       skip,
       take: limit,
     }),

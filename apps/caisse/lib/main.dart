@@ -6,6 +6,7 @@ import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/pos_select_screen.dart';
 import 'services/api_client.dart';
+import 'services/receipt_print_tracker.dart';
 import 'services/theme_service.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_palette.dart';
@@ -33,11 +34,13 @@ class GesBoutiqueApp extends StatefulWidget {
 
 class _GesBoutiqueAppState extends State<GesBoutiqueApp> {
   late final ApiClient _api;
+  late final ReceiptPrintTracker _printTracker;
 
   @override
   void initState() {
     super.initState();
     _api = ApiClient()..init();
+    _printTracker = ReceiptPrintTracker()..init();
   }
 
   @override
@@ -51,6 +54,7 @@ class _GesBoutiqueAppState extends State<GesBoutiqueApp> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: widget.themeService),
+        ChangeNotifierProvider.value(value: _printTracker),
         ChangeNotifierProvider.value(value: _api),
       ],
       child: Consumer<ThemeService>(

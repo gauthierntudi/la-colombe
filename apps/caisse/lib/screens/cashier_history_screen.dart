@@ -15,7 +15,9 @@ import '../theme/app_icons.dart';
 
 /// Historique caissier — encaissements du jour.
 class CashierHistoryScreen extends StatefulWidget {
-  const CashierHistoryScreen({super.key});
+  const CashierHistoryScreen({super.key, this.isActive = false});
+
+  final bool isActive;
 
   @override
   State<CashierHistoryScreen> createState() => _CashierHistoryScreenState();
@@ -28,7 +30,15 @@ class _CashierHistoryScreenState extends State<CashierHistoryScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
+    if (widget.isActive) _load();
+  }
+
+  @override
+  void didUpdateWidget(CashierHistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _load();
+    }
   }
 
   Future<void> _load() async {

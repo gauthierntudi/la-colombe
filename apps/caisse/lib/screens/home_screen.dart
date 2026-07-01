@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../services/api_client.dart';
+import '../services/receipt_print_tracker.dart';
 import '../services/theme_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
@@ -109,9 +110,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final api = context.read<ApiClient>();
     if (api.user?.canCashier != true) return;
     try {
-      final list = await api.searchPendingInvoices('');
+      final tracker = context.read<ReceiptPrintTracker>();
+      final pending = await api.searchPendingInvoices('');
+      final paidToday = await api.listInvoices(
+        status: 'PAID',
+        from: DateTime.now(),
+      );
+      final toPrint =
+          paidToday.where((inv) => !tracker.isPrinted(inv.id)).length;
       if (!mounted) return;
-      setState(() => _pendingBadge = list.length);
+      setState(() => _pendingBadge = pending.length + toPrint);
     } catch (_) {}
   }
 
@@ -120,10 +128,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (index >= 0) setState(() => _tab = index);
   }
 
-  Widget _bodyForTab(_HomeTab tab, ApiClient api, List<_HomeTab> tabs) {
+  Widget _bodyForTab(
+    _HomeTab tab,
+    ApiClient api,
+    List<_HomeTab> tabs,
+    _HomeTab currentTab,
+  ) {
     switch (tab) {
       case _HomeTab.dashboard:
         return CashierHomeScreen(
+          isActive: currentTab == _HomeTab.dashboard,
           onEncaisser: () => _goToTab(_HomeTab.pending, tabs),
           onSession: () => _goToTab(_HomeTab.session, tabs),
           onVoirHistorique: () => _goToTab(_HomeTab.history, tabs),
@@ -143,9 +157,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         if (api.user?.role == 'CAISSIER' && api.openSession == null) {
           return OpenSessionScreen(embedded: true);
         }
-        return PendingInvoicesScreen();
+        return PendingInvoicesScreen(
+          isActive: currentTab == _HomeTab.pending,
+        );
       case _HomeTab.history:
-        return CashierHistoryScreen();
+        return CashierHistoryScreen(
+          isActive: currentTab == _HomeTab.history,
+        );
       case _HomeTab.session:
         if (api.user?.role == 'CAISSIER' && api.openSession == null) {
           return OpenSessionScreen(embedded: true);
@@ -296,7 +314,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         children: [
           IndexedStack(
             index: selectedTab,
-            children: tabs.map((t) => _bodyForTab(t, api, tabs)).toList(),
+            children: tabs
+                .map((t) => _bodyForTab(t, api, tabs, currentTab))
+                .toList(),
           ),
           if (useCashierNav)
             Positioned(

@@ -12,16 +12,23 @@ class InvoiceListTile extends StatelessWidget {
     required this.invoice,
     this.onTap,
     this.showStatus = true,
+    this.needsReceiptPrint = false,
   });
 
   final InvoiceSummary invoice;
   final VoidCallback? onTap;
   final bool showStatus;
+  final bool needsReceiptPrint;
 
   @override
   Widget build(BuildContext context) {
     final dateFmt = DateFormat('dd/MM · HH:mm');
     final isPending = invoice.status == 'PENDING_PAYMENT';
+    final borderColor = needsReceiptPrint
+        ? AppColors.info.withValues(alpha: 0.35)
+        : isPending
+            ? AppColors.warning.withValues(alpha: 0.25)
+            : AppColors.border;
 
     return Material(
       color: AppColors.surface,
@@ -33,11 +40,7 @@ class InvoiceListTile extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isPending
-                  ? AppColors.warning.withValues(alpha: 0.25)
-                  : AppColors.border,
-            ),
+            border: Border.all(color: borderColor),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -76,6 +79,27 @@ class InvoiceListTile extends StatelessWidget {
                           ),
                         ),
                         if (showStatus) StatusBadge(status: invoice.status),
+                        if (needsReceiptPrint) ...[
+                          if (showStatus) const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.infoSoft,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'À imprimer',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.info,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 1),

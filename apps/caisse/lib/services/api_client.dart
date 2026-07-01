@@ -289,7 +289,9 @@ class ApiClient extends ChangeNotifier {
     };
     if (status != null) params['status'] = status;
     if (from != null) {
-      params['from'] = from.toIso8601String().substring(0, 10);
+      final day = _localDateParam(from);
+      params['from'] = day;
+      params['to'] = day;
     }
 
     final query = params.entries
@@ -537,4 +539,11 @@ class ApiClient extends ChangeNotifier {
 
     return decoded;
   }
+}
+
+String _localDateParam(DateTime date) {
+  final local = date.toLocal();
+  final month = local.month.toString().padLeft(2, '0');
+  final day = local.day.toString().padLeft(2, '0');
+  return '${local.year}-$month-$day';
 }
