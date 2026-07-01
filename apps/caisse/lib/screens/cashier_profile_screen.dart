@@ -40,6 +40,11 @@ class CashierProfileScreen extends StatelessWidget {
     );
     if (confirmed == true && context.mounted) {
       await context.read<ApiClient>().logout();
+      if (!context.mounted) return;
+      final navigator = Navigator.of(context);
+      if (navigator.canPop()) {
+        navigator.popUntil((route) => route.isFirst);
+      }
     }
   }
 
@@ -159,6 +164,14 @@ class _ProfileHeroHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final topInset = MediaQuery.paddingOf(context).top;
+    final nameStyle = Theme.of(context).textTheme.titleLarge?.copyWith(
+          decoration: TextDecoration.none,
+          decorationColor: Colors.transparent,
+        );
+    final roleStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+          decoration: TextDecoration.none,
+          decorationColor: Colors.transparent,
+        );
 
     return SizedBox(
       height: topInset + _blueBodyHeight + _avatarOverlap + 28,
@@ -205,28 +218,21 @@ class _ProfileHeroHeader extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 18),
-                          child: Text(
-                            user.name,
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.text,
-                              height: 1.1,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          roleLabel,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                            height: 1.2,
-                          ),
-                          maxLines: 1,
+                      Padding(
+                        padding: const EdgeInsets.only(top: 18),
+                        child: Text(
+                          user.name,
+                          style: nameStyle,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
+                      ),
+                      Text(
+                        roleLabel,
+                        style: roleStyle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
                 ),

@@ -279,6 +279,7 @@ class ApiClient extends ChangeNotifier {
   Future<List<InvoiceSummary>> listInvoices({
     String? status,
     DateTime? from,
+    String? search,
     int limit = 50,
   }) async {
     final pos = _activePos;
@@ -289,6 +290,9 @@ class ApiClient extends ChangeNotifier {
       'limit': '$limit',
     };
     if (status != null) params['status'] = status;
+    if (search != null && search.trim().isNotEmpty) {
+      params['search'] = search.trim();
+    }
     if (from != null) {
       final day = _localDateParam(from);
       params['from'] = day;

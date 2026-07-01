@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../services/api_client.dart';
+import '../services/receipt_print_tracker.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_loading.dart';
-import '../widgets/cashier_transaction_tile.dart';
+import '../widgets/invoice_list_tile.dart';
 import '../widgets/nav_count_badge.dart';
+import '../widgets/pending_invoices_alert.dart';
 import '../widgets/user_avatar.dart';
 import 'invoice_detail_screen.dart';
 import '../theme/app_icons.dart';
@@ -43,8 +44,11 @@ class _CashierHomeScreenState extends State<CashierHomeScreen> {
 
   bool _loading = true;
   bool _hideBalance = false;
-  int _pendingCount = 0;
+  int _pendingPaymentCount = 0;
+  int _toPrintCount = 0;
   List<InvoiceSummary> _recentPaid = [];
+
+  int get _pendingCount => _pendingPaymentCount + _toPrintCount;
 
   @override
   void initState() {
@@ -64,14 +68,19 @@ class _CashierHomeScreenState extends State<CashierHomeScreen> {
     setState(() => _loading = true);
     try {
       final api = context.read<ApiClient>();
+      final tracker = context.read<ReceiptPrintTracker>();
       final results = await Future.wait([
         api.searchPendingInvoices(''),
         api.listPaidInvoicesToday(),
       ]);
       if (!mounted) return;
+      final pending = results[0];
+      final paidToday = results[1];
       setState(() {
-        _pendingCount = results[0].length;
-        _recentPaid = results[1];
+        _pendingPaymentCount = pending.length;
+        _toPrintCount =
+            paidToday.where((inv) => !tracker.isPrinted(inv.id)).length;
+        _recentPaid = paidToday;
       });
     } catch (_) {
       // KPIs optionnels
@@ -90,7 +99,6 @@ class _CashierHomeScreenState extends State<CashierHomeScreen> {
       return const AppLoading();
     }
 
-    final dateFmt = DateFormat('dd/MM · HH:mm');
     final preview = _recentPaid.take(_historyPreviewLimit).toList();
     final hasMore = _recentPaid.length > _historyPreviewLimit;
     final topPadding = _pendingCount > 0 ? 20.0 : 24.0;
@@ -124,8 +132,10 @@ class _CashierHomeScreenState extends State<CashierHomeScreen> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                    child: _UpgradeBanner(
+                    child: PendingInvoicesAlert(
                       count: _pendingCount,
+                      pendingCount: _pendingPaymentCount,
+                      toPrintCount: _toPrintCount,
                       onTap: widget.onEncaisser,
                     ),
                   ),
@@ -138,7 +148,6 @@ class _CashierHomeScreenState extends State<CashierHomeScreen> {
                     invoices: preview,
                     totalCount: _recentPaid.length,
                     hasMore: hasMore,
-                    dateFmt: dateFmt,
                     onVoirTout: widget.onVoirHistorique,
                     onInvoiceTap: (id) {
                       Navigator.of(context).push(
@@ -165,7 +174,6 @@ class _HistoryPreviewSection extends StatelessWidget {
     required this.invoices,
     required this.totalCount,
     required this.hasMore,
-    required this.dateFmt,
     required this.onVoirTout,
     required this.onInvoiceTap,
   });
@@ -174,7 +182,6 @@ class _HistoryPreviewSection extends StatelessWidget {
   final List<InvoiceSummary> invoices;
   final int totalCount;
   final bool hasMore;
-  final DateFormat dateFmt;
   final VoidCallback onVoirTout;
   final void Function(String invoiceId) onInvoiceTap;
 
@@ -240,10 +247,10 @@ class _HistoryPreviewSection extends StatelessWidget {
         else ...[
           ...invoices.map(
             (inv) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: CashierTransactionTile(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: InvoiceListTile(
                 invoice: inv,
-                dateFmt: dateFmt,
+                showStatus: false,
                 onTap: () => onInvoiceTap(inv.id),
               ),
             ),
@@ -569,86 +576,6 @@ class _NotificationBell extends StatelessWidget {
                     color: const Color(0xFFEF4444),
                   ),
                 ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _UpgradeBanner extends StatelessWidget {
-  const _UpgradeBanner({required this.count, required this.onTap});
-
-  final int count;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.warningSoft,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  AppIcons.warning,
-                  color: AppColors.warning,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$count facture(s) en attente',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: AppColors.text,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Encaisser avant expiration',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.muted.withValues(alpha: 0.95),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                AppIcons.chevronRight,
-                color: AppColors.muted,
-                size: 22,
-              ),
             ],
           ),
         ),

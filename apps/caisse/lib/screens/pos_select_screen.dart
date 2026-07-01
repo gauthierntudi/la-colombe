@@ -5,7 +5,6 @@ import '../models/models.dart';
 import '../services/api_client.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_empty_state.dart';
-import 'home_screen.dart';
 import '../theme/app_icons.dart';
 
 class PosSelectScreen extends StatelessWidget {
@@ -60,10 +59,6 @@ class _PosTile extends StatelessWidget {
           if (!context.mounted) return;
           if (fromSettings) {
             Navigator.of(context).pop();
-          } else {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const HomeScreen()),
-            );
           }
         },
         borderRadius: BorderRadius.circular(16),

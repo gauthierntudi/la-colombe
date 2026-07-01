@@ -6,10 +6,8 @@ import '../models/models.dart';
 import '../services/api_client.dart';
 import '../services/receipt_print_tracker.dart';
 import '../services/theme_service.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../widgets/app_empty_state.dart';
-import '../widgets/app_home_app_bar.dart';
 import '../widgets/app_loading.dart';
 import '../widgets/cashier_bottom_nav_bar.dart';
 import 'cashier_profile_screen.dart';
@@ -45,6 +43,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _tab = 0;
   bool _yocoInitAttempted = false;
   int _pendingBadge = 0;
+  int _invoicePendingBadge = 0;
+  bool _invoiceCartHasItems = false;
+  String? _invoicesFocusFilter;
 
   @override
   void initState() {
@@ -84,6 +85,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (user.canInvoice) {
       tabs.insertAll(0, [_HomeTab.newInvoice, _HomeTab.invoices]);
     }
+    if (user.canInvoice && !user.canCashier) {
+      tabs.add(_HomeTab.profile);
+    }
     return tabs;
   }
 
@@ -108,16 +112,30 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _refreshPendingBadge() async {
     final api = context.read<ApiClient>();
-    if (api.user?.canCashier != true) return;
+    final canCashier = api.user?.canCashier == true;
+    final canInvoice = api.user?.canInvoice == true;
+    if (!canCashier && !canInvoice) return;
     try {
-      final tracker = context.read<ReceiptPrintTracker>();
       final pending = await api.searchPendingInvoices('');
-      final paidToday = await api.listPaidInvoicesToday();
-      final toPrint =
-          paidToday.where((inv) => !tracker.isPrinted(inv.id)).length;
+      var cashierBadge = pending.length;
+      if (canCashier) {
+        final tracker = context.read<ReceiptPrintTracker>();
+        final paidToday = await api.listPaidInvoicesToday();
+        final toPrint =
+            paidToday.where((inv) => !tracker.isPrinted(inv.id)).length;
+        cashierBadge = pending.length + toPrint;
+      }
       if (!mounted) return;
-      setState(() => _pendingBadge = pending.length + toPrint);
+      setState(() {
+        _invoicePendingBadge = pending.length;
+        _pendingBadge = cashierBadge;
+      });
     } catch (_) {}
+  }
+
+  void _openPendingInvoices(List<_HomeTab> tabs) {
+    setState(() => _invoicesFocusFilter = 'pending');
+    _goToTab(_HomeTab.invoices, tabs);
   }
 
   void _goToTab(_HomeTab tab, List<_HomeTab> tabs) {
@@ -147,9 +165,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           },
         );
       case _HomeTab.newInvoice:
-        return NewInvoiceScreen();
+        return NewInvoiceScreen(
+          isActive: currentTab == _HomeTab.newInvoice,
+          onCartNotEmptyChanged: (hasItems) {
+            if (_invoiceCartHasItems != hasItems) {
+              setState(() => _invoiceCartHasItems = hasItems);
+            }
+          },
+          onViewPending: () => _openPendingInvoices(tabs),
+        );
       case _HomeTab.invoices:
-        return InvoicesScreen();
+        return InvoicesScreen(
+          isActive: currentTab == _HomeTab.invoices,
+          focusFilter: _invoicesFocusFilter,
+          onFocusFilterHandled: () {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted || _invoicesFocusFilter == null) return;
+              setState(() => _invoicesFocusFilter = null);
+            });
+          },
+        );
       case _HomeTab.pending:
         if (api.user?.role == 'CAISSIER' && api.openSession == null) {
           return OpenSessionScreen(embedded: true);
@@ -171,8 +206,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  CashierNavItem? _cashierNavItemForTab(_HomeTab tab) {
+  CashierNavItem _cashierNavItemForTab(_HomeTab tab) {
     switch (tab) {
+      case _HomeTab.newInvoice:
+        return const CashierNavItem(
+          icon: AppIcons.shoppingCart,
+          selectedIcon: AppIcons.shoppingCart,
+          label: 'Nouvelle',
+        );
+      case _HomeTab.invoices:
+        return CashierNavItem(
+          icon: AppIcons.receipt,
+          selectedIcon: AppIcons.receipt,
+          label: 'Factures',
+          badge: _invoicePendingBadge > 0 ? _invoicePendingBadge : null,
+        );
       case _HomeTab.dashboard:
         return const CashierNavItem(
           icon: AppIcons.home,
@@ -205,30 +253,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           selectedIcon: AppIcons.user,
           label: 'Profil',
         );
-      default:
-        return null;
-    }
-  }
-
-  NavigationDestination _destinationForTab(_HomeTab tab) {
-    switch (tab) {
-      case _HomeTab.newInvoice:
-        return const NavigationDestination(
-          icon: Icon(AppIcons.shoppingCart),
-          selectedIcon: Icon(AppIcons.shoppingCart),
-          label: 'Nouvelle',
-        );
-      case _HomeTab.invoices:
-        return const NavigationDestination(
-          icon: Icon(AppIcons.receipt),
-          selectedIcon: Icon(AppIcons.receipt),
-          label: 'Factures',
-        );
-      default:
-        return const NavigationDestination(
-          icon: Icon(AppIcons.circle),
-          label: '—',
-        );
     }
   }
 
@@ -237,7 +261,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     context.watch<ThemeService>();
     final api = context.watch<ApiClient>();
     final user = api.user;
-    final pos = api.activePos;
     final session = api.openSession;
 
     if (user == null) {
@@ -266,46 +289,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     final isCashierOnly = user.canCashier && !user.canInvoice;
     if (isCashierOnly && session == null) {
-      return const OpenSessionScreen();
+      return AnnotatedRegion<SystemUiOverlayStyle>(
+        value: context.palette.statusBarStyle,
+        child: const OpenSessionScreen(),
+      );
     }
 
     final currentTab = tabs[selectedTab];
-    final isCashierTab = currentTab == _HomeTab.dashboard ||
-        currentTab == _HomeTab.pending ||
-        currentTab == _HomeTab.history ||
-        currentTab == _HomeTab.session ||
-        currentTab == _HomeTab.profile;
-    final showAppBar = !isCashierTab &&
-        (currentTab == _HomeTab.newInvoice ||
-            currentTab == _HomeTab.invoices);
 
-    final cashierNavItems = tabs
-        .map(_cashierNavItemForTab)
-        .whereType<CashierNavItem>()
-        .toList();
-    final useCashierNav = user.canCashier && cashierNavItems.length == tabs.length;
+    final navItems = tabs.map(_cashierNavItemForTab).toList();
+    final useCashierNav = navItems.length == tabs.length;
+    final hideBottomNav = _invoiceCartHasItems &&
+        currentTab == _HomeTab.newInvoice;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: useCashierNav
-          ? context.palette.statusBarStyle
-          : context.palette.statusBarOnSurfaceStyle,
+      value: context.palette.statusBarStyle,
       child: Scaffold(
-      extendBody: useCashierNav,
-      appBar: showAppBar
-          ? AppHomeAppBar(
-              user: user,
-              pos: pos,
-              session: session,
-              onChangePos: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const PosSelectScreen(fromSettings: true),
-                  ),
-                );
-              },
-              onLogout: api.logout,
-            )
-          : null,
+      extendBody: useCashierNav && !hideBottomNav,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -320,13 +320,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 )
                 .toList(),
           ),
-          if (useCashierNav)
+          if (useCashierNav && !hideBottomNav)
             Positioned(
               left: 0,
               right: 0,
               bottom: 0,
               child: CashierBottomNavBar(
-                items: cashierNavItems,
+                items: navItems,
                 selectedIndex: selectedTab,
                 onSelected: (i) {
                   setState(() => _tab = i);
@@ -336,18 +336,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
         ],
       ),
-      bottomNavigationBar: useCashierNav
-          ? null
-          : Container(
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.border)),
-              ),
-              child: NavigationBar(
-                selectedIndex: selectedTab,
-                onDestinationSelected: (i) => setState(() => _tab = i),
-                destinations: tabs.map(_destinationForTab).toList(),
-              ),
-            ),
     ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../config.dart';
 import '../theme/app_colors.dart';
 
 /// Avatar utilisateur — photo réseau si disponible, sinon initiales.
@@ -30,7 +31,7 @@ class UserAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final bg = backgroundColor ?? Colors.white.withValues(alpha: 0.22);
     final fg = initialsColor ?? Colors.white;
-    final url = imageUrl?.trim();
+    final url = resolveApiAssetUrl(imageUrl);
 
     if (url != null && url.isNotEmpty) {
       return CircleAvatar(

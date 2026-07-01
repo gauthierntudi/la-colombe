@@ -38,29 +38,15 @@ class _SessionScreenState extends State<SessionScreen> {
     final variance = closingCash - expectedCash;
     if (variance == 0) return true;
 
-    final message = variance > 0
-        ? 'Vous avez compté ${formatCdf(variance)} FC de plus que les espèces '
-            'attendues (${formatCdf(expectedCash)} FC).\n\n'
-            'Confirmer la clôture avec cet excédent ?'
-        : 'Il manque ${formatCdf(-variance)} FC par rapport aux espèces '
-            'attendues (${formatCdf(expectedCash)} FC).\n\n'
-            'Confirmer la clôture malgré ce manque ?';
-
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(variance > 0 ? 'Excédent de caisse' : 'Manque en caisse'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Corriger'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Confirmer'),
-          ),
-        ],
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      useSafeArea: false,
+      builder: (ctx) => _ClosureConfirmSheet(
+        isSurplus: variance > 0,
+        varianceAmount: variance.abs(),
+        expectedCash: expectedCash,
       ),
     );
 
@@ -125,78 +111,12 @@ class _SessionScreenState extends State<SessionScreen> {
         summary: _closedSummary!,
         onNewSession: () {
           setState(() => _closedSummary = null);
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const OpenSessionScreen()),
-          );
         },
       );
     }
 
     if (session == null) {
-      return ColoredBox(
-        color: AppColors.background,
-        child: Column(
-          children: [
-            CashierScreenHeader(
-              title: 'Session',
-              actions: _headerActions(context),
-            ),
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    32,
-                    32,
-                    32,
-                    32 + cashierBottomNavHeight(context),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          color: AppColors.primarySoft,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Icon(
-                          AppIcons.wallet,
-                          size: 36,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Aucune session ouverte',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Ouvrez une session pour commencer à encaisser.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.muted),
-                      ),
-                      const SizedBox(height: 24),
-                      FilledButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const OpenSessionScreen(),
-                            ),
-                          );
-                        },
-                        icon: const Icon(AppIcons.lockOpen),
-                        label: const Text('Ouvrir une session'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
+      return const OpenSessionScreen(embedded: true);
     }
 
     final expectedCash = session.expectedCashInDrawer;
@@ -554,6 +474,129 @@ class _ClosedSummaryView extends StatelessWidget {
               fontWeight: FontWeight.w700,
               color: valueColor ?? AppColors.text,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ClosureConfirmSheet extends StatelessWidget {
+  const _ClosureConfirmSheet({
+    required this.isSurplus,
+    required this.varianceAmount,
+    required this.expectedCash,
+  });
+
+  final bool isSurplus;
+  final int varianceAmount;
+  final int expectedCash;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    final accentColor = isSurplus ? AppColors.warning : AppColors.danger;
+    final accentSoft = isSurplus ? AppColors.warningSoft : AppColors.dangerSoft;
+    final title = isSurplus ? 'Excédent de caisse' : 'Manque en caisse';
+    final message = isSurplus
+        ? 'Vous avez compté ${formatCdf(varianceAmount)} FC de plus que les '
+            'espèces attendues (${formatCdf(expectedCash)} FC).'
+        : 'Il manque ${formatCdf(varianceAmount)} FC par rapport aux espèces '
+            'attendues (${formatCdf(expectedCash)} FC).';
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(24, 12, 24, 24 + bottom),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.border,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: accentSoft,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              isSurplus ? AppIcons.warning : AppIcons.error,
+              color: accentColor,
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: AppColors.text,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 15,
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isSurplus
+                ? 'Confirmer la clôture avec cet excédent ?'
+                : 'Confirmer la clôture malgré ce manque ?',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.muted,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    side: BorderSide(color: AppColors.border),
+                  ),
+                  child: const Text('Corriger'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: accentColor,
+                    minimumSize: const Size.fromHeight(50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text('Confirmer'),
+                ),
+              ),
+            ],
           ),
         ],
       ),

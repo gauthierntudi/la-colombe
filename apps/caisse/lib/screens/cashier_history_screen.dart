@@ -9,7 +9,7 @@ import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_state.dart';
 import '../widgets/app_loading.dart';
 import '../widgets/cashier_screen_header.dart';
-import '../widgets/cashier_transaction_tile.dart';
+import '../widgets/invoice_list_tile.dart';
 import 'invoice_detail_screen.dart';
 import 'pos_select_screen.dart';
 import '../theme/app_icons.dart';
@@ -84,7 +84,6 @@ class _CashierHistoryScreenState extends State<CashierHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dateFmt = DateFormat('dd/MM · HH:mm');
     final todayFmt = DateFormat('dd/MM/yyyy');
     final totalSales = _paidToday.fold<int>(
       0,
@@ -184,12 +183,12 @@ class _CashierHistoryScreenState extends State<CashierHistoryScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
                 sliver: SliverList.separated(
                   itemCount: _paidToday.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final inv = _paidToday[index];
-                    return CashierTransactionTile(
+                    return InvoiceListTile(
                       invoice: inv,
-                      dateFmt: dateFmt,
+                      showStatus: false,
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(

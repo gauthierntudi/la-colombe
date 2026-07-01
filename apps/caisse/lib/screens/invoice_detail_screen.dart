@@ -327,7 +327,11 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
   Widget _buildContent(InvoiceDetail inv, DateFormat dateFmt) {
     final api = context.watch<ApiClient>();
     final printTracker = context.watch<ReceiptPrintTracker>();
-    final canPay = inv.status == 'PENDING_PAYMENT' &&
+    final canCashier = api.user?.canCashier == true;
+    final isPending = inv.status == 'PENDING_PAYMENT';
+    final readOnlyPending = isPending && !canCashier;
+    final canPay = isPending &&
+        canCashier &&
         (api.user?.role != 'CAISSIER' || api.hasOpenSession);
     final waitingMm = _pendingPaymentId != null;
     final needsPrint =
@@ -338,6 +342,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
         _InvoiceDetailHeader(
           invoice: inv,
           dateFmt: dateFmt,
+          readOnlyPending: readOnlyPending,
           onBack: () => Navigator.of(context).pop(),
         ),
         Expanded(
@@ -359,6 +364,14 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                 const SizedBox(height: 12),
                 _PaymentsCard(payments: inv.payments, dateFmt: dateFmt),
               ],
+              if (readOnlyPending) ...[
+                const SizedBox(height: 12),
+                const MessageBanner(
+                  message:
+                      'Facture en attente de paiement — consultation seule. L\'encaissement est réservé à la caisse.',
+                  type: MessageBannerType.info,
+                ),
+              ],
               if (inv.expiresAt != null && inv.status == 'PENDING_PAYMENT') ...[
                 const SizedBox(height: 12),
                 MessageBanner(
@@ -367,7 +380,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                   type: MessageBannerType.warning,
                 ),
               ],
-              if (needsPrint) ...[
+              if (needsPrint && canCashier) ...[
                 const SizedBox(height: 12),
                 const MessageBanner(
                   message: 'Bon de sortie non imprimé — vous pouvez l\'imprimer ci-dessous',
@@ -425,7 +438,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                     ),
                   ),
           )
-        else if (inv.status == 'PAID')
+        else if (inv.status == 'PAID' && canCashier)
           _BottomBar(
             child: FilledButton.icon(
               onPressed: _processing ? null : _printReceipt,
@@ -1098,11 +1111,13 @@ class _InvoiceDetailHeader extends StatelessWidget {
     required this.invoice,
     required this.dateFmt,
     required this.onBack,
+    this.readOnlyPending = false,
   });
 
   final InvoiceDetail invoice;
   final DateFormat dateFmt;
   final VoidCallback onBack;
+  final bool readOnlyPending;
 
   @override
   Widget build(BuildContext context) {
@@ -1165,7 +1180,11 @@ class _InvoiceDetailHeader extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            isPending ? 'À encaisser' : 'Montant',
+            readOnlyPending
+                ? 'En attente'
+                : isPending
+                    ? 'À encaisser'
+                    : 'Montant',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,

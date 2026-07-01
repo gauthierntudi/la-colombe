@@ -60,6 +60,7 @@ class _GesBoutiqueAppState extends State<GesBoutiqueApp> {
       child: Consumer<ThemeService>(
         builder: (context, themeService, _) {
           return MaterialApp(
+            key: ValueKey<bool>(_api.isAuthenticated),
             title: 'La Colombe',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light,

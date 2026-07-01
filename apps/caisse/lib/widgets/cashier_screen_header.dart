@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 
 /// En-tête de section pour les écrans caissier (Encaisser, Historique, Session).
 class CashierScreenHeader extends StatelessWidget {
@@ -23,7 +25,9 @@ class CashierScreenHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final topInset = MediaQuery.paddingOf(context).top;
 
-    return Container(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: AppTheme.statusBarLight,
+      child: Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(20, topInset + 18, 20, 20),
       decoration: const BoxDecoration(
@@ -94,6 +98,7 @@ class CashierScreenHeader extends StatelessWidget {
               trailing!,
         ],
       ),
+    ),
     );
   }
 }

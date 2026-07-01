@@ -8,8 +8,6 @@ import '../theme/app_colors.dart';
 import '../widgets/message_banner.dart';
 import '../widgets/typewriter_greeting.dart';
 import '../widgets/theme_toggle.dart';
-import 'home_screen.dart';
-import 'pos_select_screen.dart';
 import '../theme/app_icons.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -61,13 +59,6 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final api = context.read<ApiClient>();
       await api.login(_emailCtrl.text.trim(), _passwordCtrl.text);
-      if (!mounted) return;
-      final next = api.activePos != null
-          ? HomeScreen()
-          : PosSelectScreen();
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => next),
-      );
     } on ApiException catch (e) {
       setState(() => _error = e.message);
     } catch (_) {

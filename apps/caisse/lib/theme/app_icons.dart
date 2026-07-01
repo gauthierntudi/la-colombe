@@ -53,4 +53,6 @@ abstract final class AppIcons {
   static const piggyBank = LucideIcons.piggyBank;
   static const calculator = LucideIcons.calculator;
   static const fileText = LucideIcons.fileText;
+  static const pencil = LucideIcons.pencil;
+  static const trash = LucideIcons.trash2;
 }
