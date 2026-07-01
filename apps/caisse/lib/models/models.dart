@@ -117,6 +117,8 @@ class CashSession {
     required this.totalSales,
     required this.invoiceCount,
     required this.openedAt,
+    this.totalMobileMoney = 0,
+    this.cashCollected,
     this.closingCash,
     this.expectedCash,
     this.cashVariance,
@@ -127,6 +129,8 @@ class CashSession {
   final String status;
   final int openingCash;
   final int totalSales;
+  final int totalMobileMoney;
+  final int? cashCollected;
   final int invoiceCount;
   final DateTime openedAt;
   final int? closingCash;
@@ -136,11 +140,21 @@ class CashSession {
 
   bool get isOpen => status == 'OPEN';
 
+  /// Espèces attendues en caisse (fond initial + encaissements espèces).
+  int get expectedCashInDrawer {
+    if (expectedCash != null) return expectedCash!;
+    return openingCash + (cashCollected ?? 0);
+  }
+
   factory CashSession.fromJson(Map<String, dynamic> json) => CashSession(
         id: json['id'] as String,
         status: json['status'] as String,
         openingCash: (json['openingCash'] as num).toInt(),
         totalSales: (json['totalSales'] as num).toInt(),
+        totalMobileMoney: (json['totalMobileMoney'] as num?)?.toInt() ?? 0,
+        cashCollected: json['cashCollected'] != null
+            ? (json['cashCollected'] as num).toInt()
+            : null,
         invoiceCount: (json['invoiceCount'] as num).toInt(),
         openedAt: DateTime.parse(json['openedAt'] as String),
         closingCash: json['closingCash'] != null

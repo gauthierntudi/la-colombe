@@ -26,12 +26,14 @@ class YocoPrintChannel {
 
   static Future<bool> printReceipt({
     required String text,
+    String? html,
     String jobName = 'Bon de sortie GES',
   }) async {
     if (!Platform.isAndroid) return false;
     try {
       await _channel.invokeMethod<void>('printReceipt', {
         'text': text,
+        if (html != null) 'html': html,
         'jobName': jobName,
       });
       return true;

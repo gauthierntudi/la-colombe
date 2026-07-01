@@ -30,8 +30,9 @@ class MainActivity : FlutterActivity() {
                     }
                     "printReceipt" -> {
                         val text = call.argument<String>("text") ?: ""
+                        val html = call.argument<String>("html")
                         val jobName = call.argument<String>("jobName") ?: "Bon de sortie"
-                        yocoPrintHelper.printReceipt(text, jobName) { ok, error ->
+                        yocoPrintHelper.printReceipt(text, html, jobName) { ok, error ->
                             if (ok) result.success(true)
                             else result.error("YOCO_PRINT", error, null)
                         }

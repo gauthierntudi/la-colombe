@@ -34,12 +34,49 @@ class _SessionScreenState extends State<SessionScreen> {
     super.dispose();
   }
 
+  Future<bool> _confirmClosure(int closingCash, int expectedCash) async {
+    final variance = closingCash - expectedCash;
+    if (variance == 0) return true;
+
+    final message = variance > 0
+        ? 'Vous avez compté ${formatCdf(variance)} FC de plus que les espèces '
+            'attendues (${formatCdf(expectedCash)} FC).\n\n'
+            'Confirmer la clôture avec cet excédent ?'
+        : 'Il manque ${formatCdf(-variance)} FC par rapport aux espèces '
+            'attendues (${formatCdf(expectedCash)} FC).\n\n'
+            'Confirmer la clôture malgré ce manque ?';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(variance > 0 ? 'Excédent de caisse' : 'Manque en caisse'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Corriger'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Confirmer'),
+          ),
+        ],
+      ),
+    );
+
+    return confirmed ?? false;
+  }
+
   Future<void> _closeSession(CashSession session) async {
     final amount = int.tryParse(_closingCtrl.text.replaceAll(' ', ''));
     if (amount == null) {
       setState(() => _error = 'Montant de clôture invalide');
       return;
     }
+
+    final expectedCash = session.expectedCashInDrawer;
+    final confirmed = await _confirmClosure(amount, expectedCash);
+    if (!confirmed) return;
 
     setState(() {
       _closing = true;
@@ -162,7 +199,8 @@ class _SessionScreenState extends State<SessionScreen> {
       );
     }
 
-    final expected = session.openingCash + session.totalSales;
+    final expectedCash = session.expectedCashInDrawer;
+    final cashCollected = session.cashCollected ?? 0;
     final navInset = cashierBottomNavHeight(context);
 
     return ColoredBox(
@@ -190,28 +228,54 @@ class _SessionScreenState extends State<SessionScreen> {
                     child: Column(
                       children: [
                         Text(
-                          'Caisse attendue',
+                          'Espèces attendues',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.white.withValues(alpha: 0.78),
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          '${formatCdf(expected)} FC',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            letterSpacing: -0.5,
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              'FC',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white.withValues(alpha: 0.75),
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              formatCdf(expectedCash),
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: -0.5,
+                                height: 1,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Depuis ${dateFmt.format(session.openedAt.toLocal())}',
+                          'Fond initial + encaissements espèces',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.white.withValues(alpha: 0.68),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Depuis ${dateFmt.format(session.openedAt.toLocal())}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.white.withValues(alpha: 0.55),
                           ),
                         ),
                       ],
@@ -237,13 +301,27 @@ class _SessionScreenState extends State<SessionScreen> {
                         const Divider(height: 24),
                         _statTile(
                           icon: AppIcons.caisse,
-                          label: 'Ventes encaissées',
-                          value: '${formatCdf(session.totalSales)} FC',
+                          label: 'Espèces encaissées',
+                          value: '${formatCdf(cashCollected)} FC',
                           highlight: true,
                         ),
+                        if (session.totalMobileMoney > 0) ...[
+                          const Divider(height: 24),
+                          _statTile(
+                            icon: AppIcons.smartphone,
+                            label: 'Mobile Money',
+                            value: '${formatCdf(session.totalMobileMoney)} FC',
+                          ),
+                        ],
                         const Divider(height: 24),
                         _statTile(
                           icon: AppIcons.receipt,
+                          label: 'Ventes totales',
+                          value: '${formatCdf(session.totalSales)} FC',
+                        ),
+                        const Divider(height: 24),
+                        _statTile(
+                          icon: AppIcons.fileText,
                           label: 'Nombre de factures',
                           value: '${session.invoiceCount}',
                         ),
@@ -282,7 +360,7 @@ class _SessionScreenState extends State<SessionScreen> {
                             labelText: 'Montant compté en caisse',
                             suffixText: 'FC',
                             prefixIcon: const Icon(AppIcons.calculator),
-                            helperText: 'Attendu : ${formatCdf(expected)} FC',
+                            helperText: 'Espèces attendues : ${formatCdf(expectedCash)} FC',
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -426,15 +504,27 @@ class _ClosedSummaryView extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _summaryRow('Ventes', '${formatCdf(summary.totalSales)} FC'),
-                    _summaryRow('Factures', '${summary.invoiceCount}'),
-                    if (summary.cashVariance != null)
+                    if (summary.expectedCash != null)
                       _summaryRow(
-                        'Écart caisse',
-                        '${formatCdf(summary.cashVariance!)} FC',
-                        valueColor: summary.cashVariance == 0
-                            ? AppColors.success
-                            : AppColors.warning,
+                        'Espèces attendues',
+                        '${formatCdf(summary.expectedCash!)} FC',
+                      ),
+                    if (summary.closingCash != null)
+                      _summaryRow(
+                        'Espèces comptées',
+                        '${formatCdf(summary.closingCash!)} FC',
+                      ),
+                    _summaryRow('Ventes totales', '${formatCdf(summary.totalSales)} FC'),
+                    _summaryRow('Factures', '${summary.invoiceCount}'),
+                    if (summary.cashVariance != null && summary.cashVariance != 0)
+                      _summaryRow(
+                        summary.cashVariance! > 0
+                            ? 'Excédent caisse'
+                            : 'Manque caisse',
+                        '${formatCdf(summary.cashVariance!.abs())} FC',
+                        valueColor: summary.cashVariance! > 0
+                            ? AppColors.warning
+                            : AppColors.danger,
                       ),
                   ],
                 ),

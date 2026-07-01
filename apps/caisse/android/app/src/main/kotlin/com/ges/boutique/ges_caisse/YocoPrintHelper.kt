@@ -15,7 +15,7 @@ import com.yoco.payments.sdk.YocoSDK
 import com.yoco.payments.sdk.data.enums.SDKEnvironment
 
 /**
- * Impression bon de sortie GES.
+ * Impression bon de sortie GES sur terminal Yoco (ticket thermique ~80 mm).
  * - Sans secret : PrintManager Android (recommandé pour print-only).
  * - Avec secret : initialise aussi YocoSDK (optionnel, pour matériel Yoco).
  */
@@ -23,6 +23,14 @@ class YocoPrintHelper(private val activity: Activity) {
     companion object {
         private const val TAG = "YocoPrintHelper"
         private const val PERMISSION_REQUEST = 9001
+
+        /** ~80 mm de largeur utile (rouleau thermique POS). */
+        private val THERMAL_80MM = PrintAttributes.MediaSize(
+            "THERMAL_80MM",
+            "android",
+            3150,
+            50000,
+        )
     }
 
     private var yocoConfigured = false
@@ -63,10 +71,15 @@ class YocoPrintHelper(private val activity: Activity) {
         }
     }
 
-    fun printReceipt(text: String, jobName: String, onResult: (Boolean, String?) -> Unit) {
+    fun printReceipt(
+        text: String,
+        html: String?,
+        jobName: String,
+        onResult: (Boolean, String?) -> Unit,
+    ) {
         activity.runOnUiThread {
             try {
-                val html = buildReceiptHtml(text)
+                val content = html?.takeIf { it.isNotBlank() } ?: buildReceiptHtml(text)
                 val webView = WebView(activity)
                 webView.webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView, url: String) {
@@ -76,14 +89,15 @@ class YocoPrintHelper(private val activity: Activity) {
                             jobName,
                             adapter,
                             PrintAttributes.Builder()
-                                .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
+                                .setMediaSize(THERMAL_80MM)
                                 .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
+                                .setColorMode(PrintAttributes.COLOR_MODE_MONOCHROME)
                                 .build(),
                         )
                         onResult(true, null)
                     }
                 }
-                webView.loadDataWithBaseURL(null, html, "text/HTML", "UTF-8", null)
+                webView.loadDataWithBaseURL(null, content, "text/HTML", "UTF-8", null)
             } catch (e: Exception) {
                 Log.e(TAG, "Print failed", e)
                 onResult(false, e.message ?: "Impression impossible")
@@ -102,8 +116,14 @@ class YocoPrintHelper(private val activity: Activity) {
             <head>
               <meta charset="utf-8"/>
               <style>
-                body { font-family: monospace; font-size: 11px; margin: 8px; }
-                pre { white-space: pre-wrap; word-wrap: break-word; }
+                @page { size: 80mm auto; margin: 2mm; }
+                body {
+                  font-family: "Courier New", monospace;
+                  font-size: 9px;
+                  margin: 0;
+                  white-space: pre-wrap;
+                  word-wrap: break-word;
+                }
               </style>
             </head>
             <body><pre>$escaped</pre></body>

@@ -18,22 +18,25 @@ async function assertPosAccess(userId: string, role: Role, pointOfSaleId: string
   }
 }
 
-function serializeSession(session: {
-  id: string;
-  status: CashSessionStatus;
-  openingCash: unknown;
-  closingCash: unknown | null;
-  expectedCash: unknown | null;
-  cashVariance: unknown | null;
-  totalMobileMoney: unknown;
-  totalSales: unknown;
-  invoiceCount: number;
-  openedAt: Date;
-  closedAt: Date | null;
-  notes: string | null;
-  user: { id: string; name: string; avatarUrl?: string | null };
-  pointOfSale: { id: string; code: string; name: string };
-}) {
+function serializeSession(
+  session: {
+    id: string;
+    status: CashSessionStatus;
+    openingCash: unknown;
+    closingCash: unknown | null;
+    expectedCash: unknown | null;
+    cashVariance: unknown | null;
+    totalMobileMoney: unknown;
+    totalSales: unknown;
+    invoiceCount: number;
+    openedAt: Date;
+    closedAt: Date | null;
+    notes: string | null;
+    user: { id: string; name: string; avatarUrl?: string | null };
+    pointOfSale: { id: string; code: string; name: string };
+  },
+  cashCollected?: number
+) {
   return {
     id: session.id,
     status: session.status,
@@ -47,6 +50,7 @@ function serializeSession(session: {
     openedAt: session.openedAt,
     closedAt: session.closedAt,
     notes: session.notes,
+    ...(cashCollected !== undefined ? { cashCollected } : {}),
     user: {
       id: session.user.id,
       name: session.user.name,
@@ -158,7 +162,7 @@ export async function openCashSession(params: {
     },
   });
 
-  return serializeSession(session);
+  return { ...serializeSession(session), cashCollected: 0 };
 }
 
 export async function closeCashSession(params: {
@@ -260,7 +264,14 @@ export async function getOpenSessionForUser(userId: string, pointOfSaleId?: stri
     include: {
       user: { select: { id: true, name: true, avatarUrl: true } },
       pointOfSale: { select: { id: true, code: true, name: true } },
+      payments: { where: { status: "COMPLETED" } },
     },
   });
-  return session ? serializeSession(session) : null;
+  if (!session) return null;
+
+  const cashCollected = session.payments
+    .filter((p) => p.method === "CASH")
+    .reduce((s, p) => s + Number(p.amount), 0);
+
+  return serializeSession(session, cashCollected);
 }

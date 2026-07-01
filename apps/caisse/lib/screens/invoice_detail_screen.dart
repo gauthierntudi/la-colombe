@@ -153,7 +153,6 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
         invoiceNumber: invoiceNumber,
         totalTtc: totalTtc,
         changeAmount: changeAmount,
-        yocoEnabled: _posConfig?.yocoPrintEnabled == true,
         onPrint: () async {
           Navigator.pop(ctx);
           await _printReceipt();
@@ -432,13 +431,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
               onPressed: _processing ? null : _printReceipt,
               icon: const Icon(AppIcons.printer),
               label: Text(
-                needsPrint
-                    ? (_posConfig?.yocoPrintEnabled == true
-                        ? 'Imprimer le bon (Yoco)'
-                        : 'Imprimer le bon de sortie')
-                    : (_posConfig?.yocoPrintEnabled == true
-                        ? 'Réimprimer le bon (Yoco)'
-                        : 'Réimprimer le bon de sortie'),
+                needsPrint ? 'Imprimer le bon' : 'Réimprimer le bon',
               ),
             ),
           ),
@@ -912,7 +905,6 @@ class _PaymentSuccessSheet extends StatelessWidget {
   const _PaymentSuccessSheet({
     required this.invoiceNumber,
     required this.totalTtc,
-    required this.yocoEnabled,
     required this.onPrint,
     required this.onDone,
     this.changeAmount,
@@ -921,7 +913,6 @@ class _PaymentSuccessSheet extends StatelessWidget {
   final String invoiceNumber;
   final int totalTtc;
   final int? changeAmount;
-  final bool yocoEnabled;
   final VoidCallback onPrint;
   final VoidCallback onDone;
 
@@ -1008,9 +999,9 @@ class _PaymentSuccessSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            label: Text(
-              yocoEnabled ? 'Imprimer le bon (Yoco)' : 'Imprimer le bon de sortie',
-              style: const TextStyle(
+            label: const Text(
+              'Imprimer le bon',
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
