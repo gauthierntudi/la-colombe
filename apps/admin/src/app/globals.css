@@ -831,7 +831,6 @@ body {
     object-fit: cover;
     background: #fff;
     flex-shrink: 0;
-    filter: grayscale(100%);
   }
 
   .login-anim-badge {
